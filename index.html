@@ -56,44 +56,53 @@
     </div>
 
     <script>
-        const SUPABASE_URL = "https://zcqtnwcdcdbmgqfdpjbs.supabase.co";
-        const SUPABASE_KEY = "sb_publishable_VoFrsNhdsOjn6XtFTNcWjw_l07gzT-Y";
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const SUPABASE_URL = "https://zcqtnwcdcdbmgqfdpjbs.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_VoFrsNhdsOjn6XtFTNcWjw_l07gzT-Y";
+    
+    // Wir nennen die Variable 'db', das ist kürzer und vermeidet Fehler
+    const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        async function loadAll() {
-            const { data: dates } = await supabase.from('dates').select('*').order('id', { ascending: false });
-            render('dateList', dates, d => `<div class="list-item"><span>${new Date(d.value).toLocaleDateString('de-DE')}</span></div>`);
+    async function loadAll() {
+        const { data: dates } = await db.from('dates').select('*').order('id', { ascending: false });
+        render('dateList', dates, d => `<div class="list-item"><span>${new Date(d.value).toLocaleDateString('de-DE')}</span> <button class="delete-btn" onclick="deleteEntry('dates', ${d.id})">Löschen</button></div>`);
 
-            const { data: items } = await supabase.from('items').select('*').order('id', { ascending: false });
-            render('itemList', items, i => `<div class="list-item"><span><strong>${i.name}</strong> (${i.qty}x)</span> <span style="font-size: 0.8rem; color: #666;">von ${i.user_name}</span></div>`);
+        const { data: items } = await db.from('items').select('*').order('id', { ascending: false });
+        render('itemList', items, i => `<div class="list-item"><span><strong>${i.name}</strong> (${i.qty}x) von ${i.user_name}</span> <button class="delete-btn" onclick="deleteEntry('items', ${i.id})">Löschen</button></div>`);
 
-            const { data: topics } = await supabase.from('topics').select('*').order('id', { ascending: false });
-            render('topicList', topics, t => `<div class="list-item ${t.type}"><span>${t.text}</span></div>`);
+        const { data: topics } = await db.from('topics').select('*').order('id', { ascending: false });
+        render('topicList', topics, t => `<div class="list-item ${t.type}"><span>${t.text}</span> <button class="delete-btn" onclick="deleteEntry('topics', ${t.id})">Löschen</button></div>`);
+    }
+
+    function render(id, data, template) {
+        document.getElementById(id).innerHTML = data?.length ? data.map(template).join('') : '<p style="color:#999; font-size:0.9rem;">Noch keine Einträge...</p>';
+    }
+
+    async function addDate() {
+        const val = document.getElementById('dateInput').value;
+        if (val) { await db.from('dates').insert([{ value: val }]); loadAll(); }
+    }
+
+    async function addItem() {
+        const name = document.getElementById('itemName').value;
+        const qty = document.getElementById('itemQty').value || 1;
+        const user = document.getElementById('userName').value;
+        if (name && user) { await db.from('items').insert([{ name, qty, user_name: user }]); loadAll(); }
+    }
+
+    async function addTopic() {
+        const text = document.getElementById('topicInput').value;
+        const type = document.getElementById('topicType').value;
+        if (text) { await db.from('topics').insert([{ text, type }]); loadAll(); }
+    }
+
+    async function deleteEntry(table, id) {
+        if (confirm('Wirklich löschen?')) {
+            await db.from(table).delete().eq('id', id);
+            loadAll();
         }
+    }
 
-        function render(id, data, template) {
-            document.getElementById(id).innerHTML = data?.length ? data.map(template).join('') : '<p style="color:#999; font-size:0.9rem;">Noch keine Einträge...</p>';
-        }
-
-        async function addDate() {
-            const val = document.getElementById('dateInput').value;
-            if (val) { await supabase.from('dates').insert([{ value: val }]); loadAll(); }
-        }
-
-        async function addItem() {
-            const name = document.getElementById('itemName').value;
-            const qty = document.getElementById('itemQty').value || 1;
-            const user = document.getElementById('userName').value;
-            if (name && user) { await supabase.from('items').insert([{ name, qty, user_name: user }]); loadAll(); }
-        }
-
-        async function addTopic() {
-            const text = document.getElementById('topicInput').value;
-            const type = document.getElementById('topicType').value;
-            if (text) { await supabase.from('topics').insert([{ text, type }]); loadAll(); }
-        }
-
-        loadAll();
-    </script>
+    loadAll();
+</script>
 </body>
 </html>
