@@ -15,8 +15,9 @@
         button { background: #d35400; color: white; border: none; font-weight: bold; cursor: pointer; flex-grow: 0; transition: 0.2s; }
         button:hover { background: #a04000; transform: scale(1.05); }
         .list-item { background: #fff5f5; padding: 12px; border-radius: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #f0e6d2; }
-        .bad { border-left: 6px solid #e74c3c; background: #fff5f5; }
-        .good { border-left: 6px solid #27ae60; background: #f5fff7; }
+        .vote-btn { background: #27ae60; margin-left: 10px; }
+        .delete-btn { background: #e74c3c; padding: 5px 10px; font-size: 0.8rem; margin-left: 5px; }
+        .meta { font-size: 0.8rem; color: #888; display: block; }
     </style>
 </head>
 <body>
@@ -26,6 +27,7 @@
         <h2>📅 Wann treffen wir uns?</h2>
         <div class="row">
             <input type="date" id="dateInput">
+            <input type="text" id="dateUser" placeholder="Dein Name">
             <button onclick="addDate()">Vorschlagen</button>
         </div>
         <div id="dateList"></div>
@@ -34,9 +36,9 @@
     <div class="card">
         <h2>🛒 Mitbring-Liste</h2>
         <div class="row">
-            <input type="text" id="itemName" placeholder="Was? (z.B. Brötchen)">
+            <input type="text" id="itemName" placeholder="Was?">
             <input type="number" id="itemQty" placeholder="Stück" style="width: 70px;">
-            <input type="text" id="userName" placeholder="Dein Name">
+            <input type="text" id="userName" placeholder="Name">
             <button onclick="addItem()">Hinzufügen</button>
         </div>
         <div id="itemList"></div>
@@ -47,8 +49,8 @@
         <div class="row">
             <input type="text" id="topicInput" placeholder="Worüber reden?">
             <select id="topicType">
-                <option value="good">👍 Ja, bitte!</option>
-                <option value="bad">🚫 Lieber nicht</option>
+                <option value="good">👍 Ja!</option>
+                <option value="bad">🚫 Nein</option>
             </select>
             <button onclick="addTopic()">Posten</button>
         </div>
@@ -56,53 +58,73 @@
     </div>
 
     <script>
-    const SUPABASE_URL = "https://zcqtnwcdcdbmgqfdpjbs.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_VoFrsNhdsOjn6XtFTNcWjw_l07gzT-Y";
-    
-    // Wir nennen die Variable 'db', das ist kürzer und vermeidet Fehler
-    const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const SUPABASE_URL = "https://zcqtnwcdcdbmgqfdpjbs.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_VoFrsNhdsOjn6XtFTNcWjw_l07gzT-Y";
+        const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    async function loadAll() {
-        const { data: dates } = await db.from('dates').select('*').order('id', { ascending: false });
-        render('dateList', dates, d => `<div class="list-item"><span>${new Date(d.value).toLocaleDateString('de-DE')}</span> <button class="delete-btn" onclick="deleteEntry('dates', ${d.id})">Löschen</button></div>`);
+        async function loadAll() {
+            // Termine laden, sortiert nach den meisten Stimmen
+            const { data: dates } = await db.from('dates').select('*').order('votes', { ascending: false });
+            render('dateList', dates, d => `
+                <div class="list-item">
+                    <div>
+                        <strong>${new Date(d.value).toLocaleDateString('de-DE')}</strong>
+                        <span class="meta">Vorgeschlagen von: ${d.created_by || 'Anonym'}</span>
+                    </div>
+                    <div>
+                        <span>⭐ ${d.votes || 0}</span>
+                        <button class="vote-btn" onclick="voteDate(${d.id}, ${d.votes || 0})">Abstimmen</button>
+                        <button class="delete-btn" onclick="deleteEntry('dates', ${d.id})">X</button>
+                    </div>
+                </div>
+            `);
 
-        const { data: items } = await db.from('items').select('*').order('id', { ascending: false });
-        render('itemList', items, i => `<div class="list-item"><span><strong>${i.name}</strong> (${i.qty}x) von ${i.user_name}</span> <button class="delete-btn" onclick="deleteEntry('items', ${i.id})">Löschen</button></div>`);
+            const { data: items } = await db.from('items').select('*').order('id', { ascending: false });
+            render('itemList', items, i => `<div class="list-item"><span><strong>${i.name}</strong> (${i.qty}x) von ${i.user_name}</span> <button class="delete-btn" onclick="deleteEntry('items', ${i.id})">Löschen</button></div>`);
 
-        const { data: topics } = await db.from('topics').select('*').order('id', { ascending: false });
-        render('topicList', topics, t => `<div class="list-item ${t.type}"><span>${t.text}</span> <button class="delete-btn" onclick="deleteEntry('topics', ${t.id})">Löschen</button></div>`);
-    }
+            const { data: topics } = await db.from('topics').select('*').order('id', { ascending: false });
+            render('topicList', topics, t => `<div class="list-item ${t.type}"><span>${t.text}</span> <button class="delete-btn" onclick="deleteEntry('topics', ${t.id})">Löschen</button></div>`);
+        }
 
-    function render(id, data, template) {
-        document.getElementById(id).innerHTML = data?.length ? data.map(template).join('') : '<p style="color:#999; font-size:0.9rem;">Noch keine Einträge...</p>';
-    }
+        function render(id, data, template) {
+            document.getElementById(id).innerHTML = data?.length ? data.map(template).join('') : '<p style="color:#999; font-size:0.9rem;">Noch keine Einträge...</p>';
+        }
 
-    async function addDate() {
-        const val = document.getElementById('dateInput').value;
-        if (val) { await db.from('dates').insert([{ value: val }]); loadAll(); }
-    }
+        async function addDate() {
+            const val = document.getElementById('dateInput').value;
+            const user = document.getElementById('dateUser').value;
+            if (val && user) { 
+                await db.from('dates').insert([{ value: val, created_by: user, votes: 0 }]); 
+                loadAll(); 
+            } else { alert("Bitte Datum und Name angeben!"); }
+        }
 
-    async function addItem() {
-        const name = document.getElementById('itemName').value;
-        const qty = document.getElementById('itemQty').value || 1;
-        const user = document.getElementById('userName').value;
-        if (name && user) { await db.from('items').insert([{ name, qty, user_name: user }]); loadAll(); }
-    }
-
-    async function addTopic() {
-        const text = document.getElementById('topicInput').value;
-        const type = document.getElementById('topicType').value;
-        if (text) { await db.from('topics').insert([{ text, type }]); loadAll(); }
-    }
-
-    async function deleteEntry(table, id) {
-        if (confirm('Wirklich löschen?')) {
-            await db.from(table).delete().eq('id', id);
+        async function voteDate(id, currentVotes) {
+            await db.from('dates').update({ votes: currentVotes + 1 }).eq('id', id);
             loadAll();
         }
-    }
 
-    loadAll();
-</script>
+        async function addItem() {
+            const name = document.getElementById('itemName').value;
+            const qty = document.getElementById('itemQty').value || 1;
+            const user = document.getElementById('userName').value;
+            if (name && user) { await db.from('items').insert([{ name, qty, user_name: user }]); loadAll(); }
+        }
+
+        async function addTopic() {
+            const text = document.getElementById('topicInput').value;
+            const type = document.getElementById('topicType').value;
+            if (text) { await db.from('topics').insert([{ text, type }]); loadAll(); }
+        }
+
+        async function deleteEntry(table, id) {
+            if (confirm('Wirklich löschen?')) {
+                await db.from(table).delete().eq('id', id);
+                loadAll();
+            }
+        }
+
+        loadAll();
+    </script>
 </body>
 </html>
