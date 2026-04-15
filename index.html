@@ -128,7 +128,6 @@
         const DEFAULTS = ['Körnerbrötchen', 'normale Brötchen', 'Croissant', 'Laugenstange', 'Laugenbrötchen'];
         let activeItem = {};
 
-        // SETZT DAS HEUTIGE DATUM ALS STANDARD
         function setDefaultDate() {
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('dateInput').value = today;
@@ -159,17 +158,30 @@
             const missing = DEFAULTS.filter(name => !currentNames.includes(name));
 
             if (missing.length > 0) {
-                for (const m of missing) { await db.from('items').insert([{ name: m, qty: 0, user_name: 'Bäcker' }]); }
+                for (const m of missing) { await db.from('items').insert([{ name: m, qty: 0, user_name: 'System' }]); }
                 loadAll(); return; 
             }
 
-            const bakerItems = items.filter(i => i.user_name === 'Bäcker' || i.user_name === 'System');
-            const customItems = items.filter(i => i.user_name !== 'Bäcker' && i.user_name !== 'System');
+            const bakerItems = items.filter(i => i.user_name === 'System' || i.user_name === 'Bäcker');
+            const customItems = items.filter(i => i.user_name !== 'System' && i.user_name !== 'Bäcker');
 
             const itemTemplate = i => {
                 const tags = i.wanted_by ? i.wanted_by.split(', ').map((w, idx) => `<span class="order-tag">${w} <span onclick="removeSingleOrder(${i.id}, ${idx})">✕</span></span>`).join('') : '';
-                const isProtected = DEFAULTS.includes(i.name);
-                return `<div class="list-item"><div><strong>${i.qty > 0 ? i.qty + 'x ' : ''}${i.name}</strong><span class="meta">${i.user_name === 'Bäcker' ? 'Bäcker-Sortiment' : 'Von: ' + i.user_name}</span><div style="margin-top:5px;">${tags}</div></div><div style="display:flex; align-items:center;"><button style="background:#e8f4f2; color:var(--primary); padding:8px; font-size:0.8rem;" onclick="openModal(${i.id}, ${i.qty}, '${i.wanted_by || ''}', '${i.name}')">Bestellen</button>${isProtected ? '' : `<button class="delete-btn" onclick="deleteEntry('items', ${i.id})">✕</button>`}</div></div>`;
+                const isBakerEntry = i.user_name === 'System' || i.user_name === 'Bäcker';
+                // Hier wird "Von: System" ausgeblendet
+                const metaText = isBakerEntry ? '' : `Von: ${i.user_name}`;
+                
+                return `<div class="list-item">
+                    <div>
+                        <strong>${i.qty > 0 ? i.qty + 'x ' : ''}${i.name}</strong>
+                        <span class="meta">${metaText}</span>
+                        <div style="margin-top:5px;">${tags}</div>
+                    </div>
+                    <div style="display:flex; align-items:center;">
+                        <button style="background:#e8f4f2; color:var(--primary); padding:8px; font-size:0.8rem;" onclick="openModal(${i.id}, ${i.qty}, '${i.wanted_by || ''}', '${i.name}')">Bestellen</button>
+                        ${isBakerEntry ? '' : `<button class="delete-btn" onclick="deleteEntry('items', ${i.id})">✕</button>`}
+                    </div>
+                </div>`;
             };
 
             render('defaultItemList', bakerItems, itemTemplate);
@@ -203,7 +215,6 @@
         async function addExtraBrötchen() { const name = document.getElementById('extraBrötchenName').value; if (name) { await db.from('items').insert([{ name, qty: 0, user_name: 'Bäcker' }]); document.getElementById('extraBrötchenName').value = ""; loadAll(); } }
         async function removeSingleOrder(itemId, idx) { const { data } = await db.from('items').select('*').eq('id', itemId).single(); let wishes = data.wanted_by.split(', '); const qtyToRemove = parseInt(wishes[idx].match(/\((\d+)x\)/)?.[1] || 0); wishes.splice(idx, 1); await db.from('items').update({ qty: Math.max(0, data.qty - qtyToRemove), wanted_by: wishes.join(', ') }).eq('id', itemId); loadAll(); }
 
-        // Startfunktionen
         setDefaultDate();
         loadAll();
     </script>
