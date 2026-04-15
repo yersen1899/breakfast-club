@@ -38,9 +38,7 @@
         .order-tag span { cursor: pointer; margin-left: 6px; color: var(--danger); font-weight: bold; }
 
         .topic-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .good-item { border-left: 4px solid var(--success); background: #fafffb; }
-        .bad-item { border-left: 4px solid var(--danger); background: #fff9f9; }
-
+        
         #orderModal {
             display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%;
             background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center;
@@ -49,6 +47,9 @@
         .delete-btn { background: transparent; color: #cedada; padding: 5px; margin-left: 10px; border: none; cursor: pointer; }
         .delete-btn:hover { color: var(--danger); }
         .meta { font-size: 0.8rem; color: var(--text-light); display: block; }
+        .location-label { font-size: 0.85rem; color: var(--primary); font-weight: 600; margin-top: 2px; }
+
+        @media (max-width: 500px) { .topic-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -59,6 +60,7 @@
             <h2>📅 Termin-Voting</h2>
             <div class="row">
                 <input type="date" id="dateInput">
+                <input type="text" id="locationInput" placeholder="Ort (z.B. Familie Müller)">
                 <input type="text" id="dateUser" placeholder="Dein Name">
                 <button onclick="addDate()">Vorschlagen</button>
             </div>
@@ -111,51 +113,65 @@
         function hasVoted(id) { return JSON.parse(localStorage.getItem('breakfast_votes') || '[]').includes(id); }
 
         async function loadAll() {
-            // Termine
+            // Termine laden - WICHTIG: Die Spalte 'location' muss in deiner Supabase Tabelle 'dates' existieren!
             const { data: dates } = await db.from('dates').select('*').order('votes', { ascending: false });
             const maxVotes = dates?.length > 0 ? Math.max(...dates.map(d => d.votes)) : 0;
+            
             render('dateList', dates, d => {
                 const isWinner = d.votes > 0 && d.votes === maxVotes;
                 const voted = hasVoted(d.id);
-                return `<div class="list-item ${isWinner ? 'winner' : ''}"><div><strong>${isWinner ? '👑 ' : ''}${new Date(d.value).toLocaleDateString('de-DE')}</strong><span class="meta">Von ${d.created_by}</span></div><div style="display:flex; align-items:center;"><span style="font-weight:bold; margin-right:10px;">${d.votes} ⭐</span><button onclick="voteDate(${d.id}, ${d.votes})" ${voted ? 'disabled' : ''}>${voted ? 'Voted' : 'Vote'}</button><button class="delete-btn" onclick="deleteEntry('dates', ${d.id})">✕</button></div></div>`;
+                return `
+                <div class="list-item ${isWinner ? 'winner' : ''}">
+                    <div>
+                        <strong>${isWinner ? '👑 ' : ''}${new Date(d.value).toLocaleDateString('de-DE')}</strong>
+                        <div class="location-label">📍 ${d.location || 'Kein Ort angegeben'}</div>
+                        <span class="meta">Vorgeschlagen von ${d.created_by}</span>
+                    </div>
+                    <div style="display:flex; align-items:center;">
+                        <span style="font-weight:bold; margin-right:10px;">${d.votes} ⭐</span>
+                        <button onclick="voteDate(${d.id}, ${d.votes})" ${voted ? 'disabled' : ''}>${voted ? 'Voted' : 'Vote'}</button>
+                        <button class="delete-btn" onclick="deleteEntry('dates', ${d.id})">✕</button>
+                    </div>
+                </div>`;
             });
 
-            // Items mit verbessertem Default-Check
-            const { data: items } = await db.from('items').select('*').order('id', { ascending: true });
-            
-            // Überprüfe, ob jedes Default-Item existiert
+            // Items laden
+            let { data: items } = await db.from('items').select('*');
             for (const defName of DEFAULTS) {
-                const exists = items?.some(i => i.name === defName);
-                if (!exists) {
+                if (!items?.some(i => i.name === defName)) {
                     await db.from('items').insert([{ name: defName, qty: 0, user_name: 'System' }]);
-                    loadAll(); return; // Neu laden nach Einfügen
+                    loadAll(); return;
                 }
             }
+            items.sort((a, b) => {
+                const indexA = DEFAULTS.indexOf(a.name), indexB = DEFAULTS.indexOf(b.name);
+                if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+                if (indexA !== -1) return -1; if (indexB !== -1) return 1;
+                return b.id - a.id;
+            });
 
             render('itemList', items, i => {
                 const isDefault = DEFAULTS.includes(i.name);
                 const wishTags = i.wanted_by ? i.wanted_by.split(', ').filter(w => w !== "").map((w, idx) => `
                     <span class="order-tag">${w} <span onclick="removeSingleOrder(${i.id}, ${idx})">✕</span></span>
                 `).join('') : '';
-
-                return `
-                <div class="list-item">
-                    <div style="max-width: 70%;">
-                        <strong>${i.qty}x ${i.name}</strong>
-                        <span class="meta">Angeboten von: ${i.user_name}</span>
-                        <div style="margin-top:5px;">${wishTags}</div>
-                    </div>
-                    <div style="display:flex; align-items:center;">
-                        <button style="background:#e8f4f2; color:var(--primary); padding:8px; font-size:0.8rem;" onclick="openModal(${i.id}, ${i.qty}, '${i.wanted_by || ''}')">Bestellen</button>
-                        ${isDefault ? '' : `<button class="delete-btn" onclick="deleteEntry('items', ${i.id})">✕</button>`}
-                    </div>
-                </div>`;
+                return `<div class="list-item"><div style="max-width: 70%;"><strong>${i.qty}x ${i.name}</strong><span class="meta">Angeboten von: ${i.user_name}</span><div style="margin-top:5px;">${wishTags}</div></div><div style="display:flex; align-items:center;"><button style="background:#e8f4f2; color:var(--primary); padding:8px; font-size:0.8rem;" onclick="openModal(${i.id}, ${i.qty}, '${i.wanted_by || ''}')">Bestellen</button>${isDefault ? '' : `<button class="delete-btn" onclick="deleteEntry('items', ${i.id})">✕</button>`}</div></div>`;
             });
 
-            // Themen
             const { data: topics } = await db.from('topics').select('*').order('id', { ascending: false });
-            render('goodTopics', topics?.filter(t => t.type === 'good'), t => `<div class="list-item good-item"><span>${t.text}</span><button class="delete-btn" onclick="deleteEntry('topics', ${t.id})">✕</button></div>`);
-            render('badTopics', topics?.filter(t => t.type === 'bad'), t => `<div class="list-item bad-item"><span>${t.text}</span><button class="delete-btn" onclick="deleteEntry('topics', ${t.id})">✕</button></div>`);
+            render('goodTopics', topics?.filter(t => t.type === 'good'), t => `<div class="list-item"><span>${t.text}</span><button class="delete-btn" onclick="deleteEntry('topics', ${t.id})">✕</button></div>`);
+            render('badTopics', topics?.filter(t => t.type === 'bad'), t => `<div class="list-item" style="border-left:4px solid var(--danger);"><span>${t.text}</span><button class="delete-btn" onclick="deleteEntry('topics', ${t.id})">✕</button></div>`);
+        }
+
+        async function addDate() {
+            const v = document.getElementById('dateInput').value;
+            const loc = document.getElementById('locationInput').value;
+            const u = document.getElementById('dateUser').value;
+            if (v && u) { 
+                await db.from('dates').insert([{ value: v, location: loc, created_by: u, votes: 0 }]); 
+                document.getElementById('locationInput').value = "";
+                loadAll(); 
+            }
         }
 
         async function removeSingleOrder(itemId, orderIndex) {
@@ -170,43 +186,12 @@
         }
 
         function render(id, data, template) { document.getElementById(id).innerHTML = data?.length ? data.map(template).join('') : '<p style="color:#ccc; text-align:center; font-size:0.8rem;">Leer</p>'; }
-
-        async function voteDate(id, v) {
-            if (hasVoted(id)) return;
-            await db.from('dates').update({ votes: v + 1 }).eq('id', id);
-            const vs = JSON.parse(localStorage.getItem('breakfast_votes') || '[]');
-            vs.push(id); localStorage.setItem('breakfast_votes', JSON.stringify(vs));
-            loadAll();
-        }
-
-        async function addDate() {
-            const v = document.getElementById('dateInput').value, u = document.getElementById('dateUser').value;
-            if (v && u) { await db.from('dates').insert([{ value: v, created_by: u, votes: 0 }]); loadAll(); }
-        }
-
-        async function addItem() {
-            const n = document.getElementById('itemName').value, q = parseInt(document.getElementById('itemQty').value) || 0, u = document.getElementById('userName').value;
-            if (n && u) { await db.from('items').insert([{ name: n, qty: q, user_name: u }]); loadAll(); }
-        }
-
+        async function voteDate(id, v) { if (hasVoted(id)) return; await db.from('dates').update({ votes: v + 1 }).eq('id', id); const vs = JSON.parse(localStorage.getItem('breakfast_votes') || '[]'); vs.push(id); localStorage.setItem('breakfast_votes', JSON.stringify(vs)); loadAll(); }
+        async function addItem() { const n = document.getElementById('itemName').value, q = parseInt(document.getElementById('itemQty').value) || 0, u = document.getElementById('userName').value; if (n && u) { await db.from('items').insert([{ name: n, qty: q, user_name: u }]); loadAll(); } }
         function openModal(id, qty, wishes) { activeItem = {id, qty, wishes}; document.getElementById('orderModal').style.display = 'flex'; }
         function closeModal() { document.getElementById('orderModal').style.display = 'none'; }
-        
-        document.getElementById('confirmOrderBtn').onclick = async function() {
-            const name = document.getElementById('modalName').value, num = parseInt(document.getElementById('modalQty').value);
-            if (name && num > 0) {
-                const entry = `${name} (${num}x)`;
-                const wishes = activeItem.wishes && activeItem.wishes !== "" ? activeItem.wishes + ", " + entry : entry;
-                await db.from('items').update({ qty: activeItem.qty + num, wanted_by: wishes }).eq('id', activeItem.id);
-                closeModal(); loadAll();
-            }
-        };
-
-        async function addTopic() {
-            const t = document.getElementById('topicInput').value, ty = document.getElementById('topicType').value;
-            if (t) { await db.from('topics').insert([{ text: t, type: ty }]); document.getElementById('topicInput').value = ""; loadAll(); }
-        }
-
+        document.getElementById('confirmOrderBtn').onclick = async function() { const name = document.getElementById('modalName').value, num = parseInt(document.getElementById('modalQty').value); if (name && num > 0) { const entry = `${name} (${num}x)`; const wishes = activeItem.wishes && activeItem.wishes !== "" ? activeItem.wishes + ", " + entry : entry; await db.from('items').update({ qty: activeItem.qty + num, wanted_by: wishes }).eq('id', activeItem.id); closeModal(); loadAll(); } };
+        async function addTopic() { const t = document.getElementById('topicInput').value, ty = document.getElementById('topicType').value; if (t) { await db.from('topics').insert([{ text: t, type: ty }]); document.getElementById('topicInput').value = ""; loadAll(); } }
         async function deleteEntry(table, id) { if (confirm('Wirklich löschen?')) { await db.from(table).delete().eq('id', id); loadAll(); } }
 
         loadAll();
