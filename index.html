@@ -110,32 +110,27 @@
         const DEFAULTS = ['Körnerbrötchen', 'normale Brötchen', 'Croissant', 'Laugenstange', 'Laugenbrötchen'];
         let activeItem = {};
 
+        // SETZT DAS HEUTIGE DATUM ALS DEFAULT
+        function setDefaultDate() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            document.getElementById('dateInput').value = `${year}-${month}-${day}`;
+        }
+
         function hasVoted(id) { return JSON.parse(localStorage.getItem('breakfast_votes') || '[]').includes(id); }
 
         async function loadAll() {
-            // Termine laden - WICHTIG: Die Spalte 'location' muss in deiner Supabase Tabelle 'dates' existieren!
             const { data: dates } = await db.from('dates').select('*').order('votes', { ascending: false });
             const maxVotes = dates?.length > 0 ? Math.max(...dates.map(d => d.votes)) : 0;
             
             render('dateList', dates, d => {
                 const isWinner = d.votes > 0 && d.votes === maxVotes;
                 const voted = hasVoted(d.id);
-                return `
-                <div class="list-item ${isWinner ? 'winner' : ''}">
-                    <div>
-                        <strong>${isWinner ? '👑 ' : ''}${new Date(d.value).toLocaleDateString('de-DE')}</strong>
-                        <div class="location-label">📍 ${d.location || 'Kein Ort angegeben'}</div>
-                        <span class="meta">Vorgeschlagen von ${d.created_by}</span>
-                    </div>
-                    <div style="display:flex; align-items:center;">
-                        <span style="font-weight:bold; margin-right:10px;">${d.votes} ⭐</span>
-                        <button onclick="voteDate(${d.id}, ${d.votes})" ${voted ? 'disabled' : ''}>${voted ? 'Voted' : 'Vote'}</button>
-                        <button class="delete-btn" onclick="deleteEntry('dates', ${d.id})">✕</button>
-                    </div>
-                </div>`;
+                return `<div class="list-item ${isWinner ? 'winner' : ''}"><div><strong>${isWinner ? '👑 ' : ''}${new Date(d.value).toLocaleDateString('de-DE')}</strong><div class="location-label">📍 ${d.location || 'Kein Ort angegeben'}</div><span class="meta">Von ${d.created_by}</span></div><div style="display:flex; align-items:center;"><span style="font-weight:bold; margin-right:10px;">${d.votes} ⭐</span><button onclick="voteDate(${d.id}, ${d.votes})" ${voted ? 'disabled' : ''}>${voted ? 'Voted' : 'Vote'}</button><button class="delete-btn" onclick="deleteEntry('dates', ${d.id})">✕</button></div></div>`;
             });
 
-            // Items laden
             let { data: items } = await db.from('items').select('*');
             for (const defName of DEFAULTS) {
                 if (!items?.some(i => i.name === defName)) {
@@ -155,7 +150,7 @@
                 const wishTags = i.wanted_by ? i.wanted_by.split(', ').filter(w => w !== "").map((w, idx) => `
                     <span class="order-tag">${w} <span onclick="removeSingleOrder(${i.id}, ${idx})">✕</span></span>
                 `).join('') : '';
-                return `<div class="list-item"><div style="max-width: 70%;"><strong>${i.qty}x ${i.name}</strong><span class="meta">Angeboten von: ${i.user_name}</span><div style="margin-top:5px;">${wishTags}</div></div><div style="display:flex; align-items:center;"><button style="background:#e8f4f2; color:var(--primary); padding:8px; font-size:0.8rem;" onclick="openModal(${i.id}, ${i.qty}, '${i.wanted_by || ''}')">Bestellen</button>${isDefault ? '' : `<button class="delete-btn" onclick="deleteEntry('items', ${i.id})">✕</button>`}</div></div>`;
+                return `<div class="list-item"><div style="max-width: 70%;"><strong>${i.qty}x ${i.name}</strong><span class="meta">Von: ${i.user_name}</span><div style="margin-top:5px;">${wishTags}</div></div><div style="display:flex; align-items:center;"><button style="background:#e8f4f2; color:var(--primary); padding:8px; font-size:0.8rem;" onclick="openModal(${i.id}, ${i.qty}, '${i.wanted_by || ''}')">Bestellen</button>${isDefault ? '' : `<button class="delete-btn" onclick="deleteEntry('items', ${i.id})">✕</button>`}</div></div>`;
             });
 
             const { data: topics } = await db.from('topics').select('*').order('id', { ascending: false });
@@ -164,9 +159,7 @@
         }
 
         async function addDate() {
-            const v = document.getElementById('dateInput').value;
-            const loc = document.getElementById('locationInput').value;
-            const u = document.getElementById('dateUser').value;
+            const v = document.getElementById('dateInput').value, loc = document.getElementById('locationInput').value, u = document.getElementById('dateUser').value;
             if (v && u) { 
                 await db.from('dates').insert([{ value: v, location: loc, created_by: u, votes: 0 }]); 
                 document.getElementById('locationInput').value = "";
@@ -194,6 +187,7 @@
         async function addTopic() { const t = document.getElementById('topicInput').value, ty = document.getElementById('topicType').value; if (t) { await db.from('topics').insert([{ text: t, type: ty }]); document.getElementById('topicInput').value = ""; loadAll(); } }
         async function deleteEntry(table, id) { if (confirm('Wirklich löschen?')) { await db.from(table).delete().eq('id', id); loadAll(); } }
 
+        setDefaultDate(); // Beim Start Datum setzen
         loadAll();
     </script>
 </body>
