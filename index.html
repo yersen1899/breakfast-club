@@ -3,60 +3,156 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Breakfast Club</title>
+    <title>Breakfast Club | Modern</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #fdf6e3; padding: 15px; color: #4e342e; }
-        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); max-width: 550px; margin: 0 auto 20px; border-top: 6px solid #d35400; }
-        h1 { text-align: center; color: #d35400; font-size: 2.5rem; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 30px; }
-        h2 { border-bottom: 2px solid #fbd38d; padding-bottom: 8px; color: #a0522d; font-size: 1.3rem; }
-        .row { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
-        input, select, button { padding: 12px; border-radius: 10px; border: 1px solid #ddd; flex-grow: 1; font-size: 1rem; }
-        button { background: #d35400; color: white; border: none; font-weight: bold; cursor: pointer; flex-grow: 0; transition: 0.2s; }
-        button:hover { background: #a04000; transform: scale(1.05); }
-        .list-item { background: #fff5f5; padding: 12px; border-radius: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #f0e6d2; }
-        .vote-btn { background: #27ae60; margin-left: 10px; }
-        .unvote-btn { background: #95a5a6; margin-left: 10px; }
-        .delete-btn { background: #e74c3c; padding: 5px 10px; font-size: 0.8rem; margin-left: 5px; }
-        .meta { font-size: 0.8rem; color: #888; display: block; }
-        .voted { border-left: 6px solid #27ae60; }
+        :root {
+            --primary: #ff4757;
+            --primary-hover: #ff6b81;
+            --bg: #f1f2f6;
+            --card-bg: #ffffff;
+            --text: #2f3542;
+            --text-light: #747d8c;
+            --success: #2ed573;
+        }
+
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background: var(--bg); 
+            padding: 20px; 
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .container { max-width: 600px; margin: 0 auto; }
+
+        h1 { 
+            text-align: center; 
+            font-weight: 800; 
+            font-size: 2.5rem; 
+            margin-bottom: 40px; 
+            letter-spacing: -1px;
+            color: var(--text);
+        }
+
+        .card { 
+            background: var(--card-bg); 
+            padding: 24px; 
+            border-radius: 24px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.04); 
+            margin-bottom: 24px; 
+            border: 1px solid rgba(0,0,0,0.02);
+        }
+
+        h2 { 
+            font-size: 1.1rem; 
+            font-weight: 700; 
+            margin-top: 0; 
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-light);
+        }
+
+        .row { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+
+        input, select { 
+            padding: 14px 18px; 
+            border-radius: 14px; 
+            border: 2px solid #edeff2; 
+            background: #f8f9fa;
+            font-size: 1rem; 
+            flex-grow: 1;
+            transition: all 0.2s;
+            outline: none;
+        }
+
+        input:focus { border-color: var(--primary); background: #fff; }
+
+        button { 
+            padding: 14px 24px; 
+            border-radius: 14px; 
+            background: var(--primary); 
+            color: white; 
+            border: none; 
+            font-weight: 700; 
+            cursor: pointer; 
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(255, 71, 87, 0.2);
+        }
+
+        button:hover { transform: translateY(-2px); background: var(--primary-hover); box-shadow: 0 6px 15px rgba(255, 71, 87, 0.3); }
+        button:active { transform: translateY(0); }
+
+        .list-item { 
+            background: #fff; 
+            padding: 16px; 
+            border-radius: 16px; 
+            margin-bottom: 12px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border: 1px solid #f1f2f6;
+            transition: all 0.2s;
+        }
+
+        .list-item:hover { border-color: #e1e2e6; transform: scale(1.01); }
+
+        .vote-btn { background: var(--success); box-shadow: 0 4px 12px rgba(46, 213, 115, 0.2); }
+        .unvote-btn { background: #ced4da; color: #495057; box-shadow: none; }
+        .delete-btn { background: #f1f2f6; color: #ff4757; padding: 8px 12px; font-size: 0.8rem; box-shadow: none; margin-left: 8px; }
+        .delete-btn:hover { background: #ffeef0; }
+
+        .meta { font-size: 0.85rem; color: var(--text-light); margin-top: 4px; display: block; }
+        .voted { border-left: 5px solid var(--success); }
+        
+        /* Bad Topic Style */
+        .bad { background: #fff5f5; border-color: #ffd8d8; }
+        .good { background: #f5fff8; border-color: #d8ffde; }
+
+        @media (max-width: 480px) {
+            .row { flex-direction: column; }
+            button { width: 100%; }
+        }
     </style>
 </head>
 <body>
-    <h1>🥓 Breakfast Club</h1>
+    <div class="container">
+        <h1>Breakfast Club 🥓</h1>
 
-    <div class="card">
-        <h2>📅 Wann treffen wir uns?</h2>
-        <div class="row">
-            <input type="date" id="dateInput">
-            <input type="text" id="dateUser" placeholder="Dein Name">
-            <button onclick="addDate()">Vorschlagen</button>
+        <div class="card">
+            <h2>📅 Termin-Voting</h2>
+            <div class="row">
+                <input type="date" id="dateInput">
+                <input type="text" id="dateUser" placeholder="Dein Name">
+                <button onclick="addDate()">Vorschlagen</button>
+            </div>
+            <div id="dateList"></div>
         </div>
-        <div id="dateList"></div>
-    </div>
 
-    <div class="card">
-        <h2>🛒 Mitbring-Liste</h2>
-        <div class="row">
-            <input type="text" id="itemName" placeholder="Was?">
-            <input type="number" id="itemQty" placeholder="Stück" style="width: 70px;">
-            <input type="text" id="userName" placeholder="Name">
-            <button onclick="addItem()">Hinzufügen</button>
+        <div class="card">
+            <h2>🛒 Wer bringt was?</h2>
+            <div class="row">
+                <input type="text" id="itemName" placeholder="Was? (z.B. Käse)">
+                <input type="number" id="itemQty" placeholder="Stk" style="width: 80px;">
+                <input type="text" id="userName" placeholder="Name">
+                <button onclick="addItem()">Dazu</button>
+            </div>
+            <div id="itemList"></div>
         </div>
-        <div id="itemList"></div>
-    </div>
 
-    <div class="card">
-        <h2>💬 Talk-Themen</h2>
-        <div class="row">
-            <input type="text" id="topicInput" placeholder="Worüber reden?">
-            <select id="topicType">
-                <option value="good">👍 Ja!</option>
-                <option value="bad">🚫 Nein</option>
-            </select>
-            <button onclick="addTopic()">Posten</button>
+        <div class="card">
+            <h2>💬 Themen-Check</h2>
+            <div class="row">
+                <input type="text" id="topicInput" placeholder="Vorschlag...">
+                <select id="topicType">
+                    <option value="good">👍 Ja!</option>
+                    <option value="bad">🚫 Nein</option>
+                </select>
+                <button onclick="addTopic()">OK</button>
+            </div>
+            <div id="topicList"></div>
         </div>
-        <div id="topicList"></div>
     </div>
 
     <script>
@@ -64,7 +160,6 @@
         const SUPABASE_KEY = "sb_publishable_VoFrsNhdsOjn6XtFTNcWjw_l07gzT-Y";
         const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Prüft, ob für eine ID schon abgestimmt wurde
         function hasVoted(id) {
             const votes = JSON.parse(localStorage.getItem('myVotes') || '[]');
             return votes.includes(id);
@@ -77,38 +172,43 @@
                 return `
                 <div class="list-item ${voted ? 'voted' : ''}">
                     <div>
-                        <strong>${new Date(d.value).toLocaleDateString('de-DE')}</strong>
-                        <span class="meta">Vorgeschlagen von: ${d.created_by || 'Anonym'}</span>
+                        <strong style="font-size: 1.1rem;">${new Date(d.value).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })}</strong>
+                        <span class="meta">Von ${d.created_by || 'Anonym'}</span>
                     </div>
-                    <div>
-                        <span>⭐ ${d.votes || 0}</span>
+                    <div style="display:flex; align-items:center;">
+                        <span style="font-weight:800; margin-right:12px;">${d.votes || 0} ⭐</span>
                         ${voted 
-                            ? `<button class="unvote-btn" onclick="unvoteDate(${d.id}, ${d.votes || 0})">Zurücknehmen</button>`
-                            : `<button class="vote-btn" onclick="voteDate(${d.id}, ${d.votes || 0})">Abstimmen</button>`
+                            ? `<button class="unvote-btn" onclick="unvoteDate(${d.id}, ${d.votes || 0})">Rückgängig</button>`
+                            : `<button class="vote-btn" onclick="voteDate(${d.id}, ${d.votes || 0})">Vote</button>`
                         }
-                        <button class="delete-btn" onclick="deleteEntry('dates', ${d.id})">X</button>
+                        <button class="delete-btn" onclick="deleteEntry('dates', ${d.id})">✕</button>
                     </div>
                 </div>
             `});
 
             const { data: items } = await db.from('items').select('*').order('id', { ascending: false });
-            render('itemList', items, i => `<div class="list-item"><span><strong>${i.name}</strong> (${i.qty}x) von ${i.user_name}</span> <button class="delete-btn" onclick="deleteEntry('items', ${i.id})">Löschen</button></div>`);
+            render('itemList', items, i => `
+                <div class="list-item">
+                    <span><strong>${i.qty}x ${i.name}</strong><br><span class="meta">von ${i.user_name}</span></span> 
+                    <button class="delete-btn" onclick="deleteEntry('items', ${i.id})">✕</button>
+                </div>`);
 
             const { data: topics } = await db.from('topics').select('*').order('id', { ascending: false });
-            render('topicList', topics, t => `<div class="list-item ${t.type}"><span>${t.text}</span> <button class="delete-btn" onclick="deleteEntry('topics', ${t.id})">Löschen</button></div>`);
+            render('topicList', topics, t => `
+                <div class="list-item ${t.type}">
+                    <span>${t.text}</span> 
+                    <button class="delete-btn" onclick="deleteEntry('topics', ${t.id})">✕</button>
+                </div>`);
         }
 
         function render(id, data, template) {
-            document.getElementById(id).innerHTML = data?.length ? data.map(template).join('') : '<p style="color:#999; font-size:0.9rem;">Noch keine Einträge...</p>';
+            document.getElementById(id).innerHTML = data?.length ? data.map(template).join('') : '<p style="color:#b2bec3; text-align:center; font-size:0.9rem;">Noch leer...</p>';
         }
 
         async function addDate() {
             const val = document.getElementById('dateInput').value;
             const user = document.getElementById('dateUser').value;
-            if (val && user) { 
-                await db.from('dates').insert([{ value: val, created_by: user, votes: 0 }]); 
-                loadAll(); 
-            } else { alert("Bitte Datum und Name angeben!"); }
+            if (val && user) { await db.from('dates').insert([{ value: val, created_by: user, votes: 0 }]); loadAll(); }
         }
 
         async function voteDate(id, currentVotes) {
@@ -142,10 +242,7 @@
         }
 
         async function deleteEntry(table, id) {
-            if (confirm('Wirklich löschen?')) {
-                await db.from(table).delete().eq('id', id);
-                loadAll();
-            }
+            if (confirm('Löschen?')) { await db.from(table).delete().eq('id', id); loadAll(); }
         }
 
         loadAll();
