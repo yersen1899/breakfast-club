@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Breakfast Club | Final</title>
+    <title>Breakfast Club | Organisiert</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
@@ -21,33 +21,34 @@
         body { font-family: -apple-system, sans-serif; background: var(--bg); padding: 20px; color: var(--text); line-height: 1.6; }
         .container { max-width: 600px; margin: 0 auto; }
         h1 { text-align: center; font-weight: 800; font-size: 2.2rem; margin-bottom: 35px; }
-        .card { background: var(--card-bg); padding: 24px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); margin-bottom: 24px; position: relative; }
+        .card { background: var(--card-bg); padding: 24px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); margin-bottom: 24px; }
         h2 { font-size: 1.05rem; font-weight: 700; margin-bottom: 20px; text-transform: uppercase; color: var(--text-light); border-bottom: 2px solid #f0f4f4; padding-bottom: 10px; }
+        
         .row { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
         input, select { padding: 13px; border-radius: 12px; border: 2px solid #e1eaea; flex-grow: 1; outline: none; }
         button { padding: 13px 20px; border-radius: 12px; background: var(--primary); color: white; border: none; font-weight: 700; cursor: pointer; transition: 0.15s; }
-        button:disabled { background: #cbd4d4; cursor: not-allowed; }
         
-        .list-item { background: #fff; padding: 15px; border-radius: 14px; margin-bottom: 10px; border: 1px solid #f0f4f4; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
-        .winner { border: 3px solid var(--gold); background: #fffdf5; }
-
+        .list-item { background: #fff; padding: 15px; border-radius: 14px; margin-bottom: 10px; border: 1px solid #f0f4f4; display: flex; justify-content: space-between; align-items: center; }
+        
         .order-tag { 
             display: inline-flex; align-items: center; background: #e8f4f2; color: var(--primary); 
             padding: 2px 8px; border-radius: 8px; font-size: 0.75rem; margin: 2px; font-weight: 600;
         }
         .order-tag span { cursor: pointer; margin-left: 6px; color: var(--danger); font-weight: bold; }
 
+        .winner { border: 3px solid var(--gold); background: #fffdf5; }
         .topic-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        
+        .good-item { border-left: 4px solid var(--success); background: #fafffb; }
+        .bad-item { border-left: 4px solid var(--danger); background: #fff9f9; }
+
         #orderModal {
             display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center;
+            background-color: rgba(0,0,0,0.4); align-items: center; justify-content: center;
         }
         .modal-content { background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; }
-        .delete-btn { background: transparent; color: #cedada; padding: 5px; margin-left: 10px; border: none; cursor: pointer; }
+        .delete-btn { background: transparent; color: #cedada; padding: 5px; cursor: pointer; border: none; font-size: 1.1rem; }
         .delete-btn:hover { color: var(--danger); }
         .meta { font-size: 0.8rem; color: var(--text-light); display: block; }
-        .location-label { font-size: 0.85rem; color: var(--primary); font-weight: 600; margin-top: 2px; }
 
         @media (max-width: 500px) { .topic-grid { grid-template-columns: 1fr; } }
     </style>
@@ -57,22 +58,155 @@
         <h1>☕ Breakfast Club 🥐</h1>
 
         <div class="card">
-            <h2>📅 Termin-Voting</h2>
+            <h2>📅 Wann frühstücken wir?</h2>
             <div class="row">
                 <input type="date" id="dateInput">
-                <input type="text" id="locationInput" placeholder="Ort (z.B. Familie Müller)">
                 <input type="text" id="dateUser" placeholder="Dein Name">
-                <button onclick="addDate()">Vorschlagen</button>
+                <button onclick="addDate()">Vorschlag</button>
             </div>
             <div id="dateList"></div>
         </div>
 
         <div class="card">
-            <h2>🛒 Mitbring-Liste & Bestellung</h2>
+            <h2>🥐 Brötchen-Bestellung</h2>
+            <p style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 15px;">Hier kannst du angeben, was du vom Bäcker brauchst.</p>
+            <div id="defaultItemList"></div>
+        </div>
+
+        <div class="card">
+            <h2>🍯 Wer bringt was mit?</h2>
             <div class="row">
-                <input type="text" id="itemName" placeholder="Was bringst du mit?">
-                <input type="number" id="itemQty" placeholder="Menge" value="0" style="width: 80px;">
+                <input type="text" id="itemName" placeholder="z.B. Nutella, Käse, Eier...">
                 <input type="text" id="userName" placeholder="Dein Name">
+                <button onclick="addItem()">Eintragen</button>
+            </div>
+            <div id="customItemList"></div>
+        </div>
+
+        <div class="card">
+            <h2>💬 Themen-Check</h2>
+            <div class="row">
+                <input type="text" id="topicInput" placeholder="Thema...">
+                <select id="topicType"><option value="good">👍 Redebedarf</option><option value="bad">🚫 Tabu</option></select>
+                <button onclick="addTopic()">Posten</button>
+            </div>
+            <div class="topic-grid">
+                <div id="goodTopics"></div>
+                <div id="badTopics"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="orderModal"><div class="modal-content">
+        <h3 id="modalTitle">Bestellung</h3>
+        <input type="text" id="modalName" placeholder="Dein Name" style="width:100%; padding:12px; margin-bottom:10px; border-radius:10px; border:1px solid #ddd; box-sizing: border-box;">
+        <input type="number" id="modalQty" value="1" style="width:100%; padding:12px; margin-bottom:20px; border-radius:10px; border:1px solid #ddd; box-sizing: border-box;">
+        <div style="display:flex; gap:10px;">
+            <button id="confirmOrderBtn" style="flex:1;">Bestätigen</button>
+            <button onclick="closeModal()" style="background:#cedada; color:#1a1e1e; flex:1;">Abbruch</button>
+        </div>
+    </div></div>
+
+    <script>
+        const SUPABASE_URL = "https://zcqtnwcdcdbmgqfdpjbs.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_VoFrsNhdsOjn6XtFTNcWjw_l07gzT-Y";
+        const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const DEFAULTS = ['Körnerbrötchen', 'normale Brötchen', 'Croissant', 'Laugenstange', 'Laugenbrötchen'];
+        let activeItem = {};
+
+        async function loadAll() {
+            // Termine
+            const { data: dates } = await db.from('dates').select('*').order('votes', { ascending: false });
+            const maxVotes = dates?.length > 0 ? Math.max(...dates.map(d => d.votes)) : 0;
+            render('dateList', dates, d => {
+                const isWinner = d.votes > 0 && d.votes === maxVotes;
+                const voted = JSON.parse(localStorage.getItem('breakfast_votes') || '[]').includes(d.id);
+                return `<div class="list-item ${isWinner ? 'winner' : ''}"><div><strong>${isWinner ? '👑 ' : ''}${new Date(d.value).toLocaleDateString('de-DE')}</strong><span class="meta">Von ${d.created_by}</span></div><div style="display:flex; align-items:center;"><span style="font-weight:bold; margin-right:10px;">${d.votes} ⭐</span><button onclick="voteDate(${d.id}, ${d.votes})" ${voted ? 'disabled' : ''}>Vote</button><button class="delete-btn" onclick="deleteEntry('dates', ${d.id})">✕</button></div></div>`;
+            });
+
+            // Items (Getrennt in Default und Custom)
+            const { data: items } = await db.from('items').select('*').order('id', { ascending: true });
+            
+            // Falls leer, Defaults anlegen
+            if (items && items.length === 0) {
+                for (const name of DEFAULTS) { await db.from('items').insert([{ name, qty: 0, user_name: 'System' }]); }
+                loadAll(); return;
+            }
+
+            const defaultItems = items.filter(i => DEFAULTS.includes(i.name));
+            const customItems = items.filter(i => !DEFAULTS.includes(i.name));
+
+            const itemTemplate = i => {
+                const tags = i.wanted_by ? i.wanted_by.split(', ').map((w, idx) => `<span class="order-tag">${w} <span onclick="removeSingleOrder(${i.id}, ${idx})">✕</span></span>`).join('') : '';
+                return `<div class="list-item"><div><strong>${i.qty > 0 ? i.qty + 'x ' : ''}${i.name}</strong><span class="meta">${DEFAULTS.includes(i.name) ? 'Vom Bäcker' : 'Von: ' + i.user_name}</span><div style="margin-top:5px;">${tags}</div></div><div style="display:flex; align-items:center;"><button style="background:#e8f4f2; color:var(--primary); padding:8px; font-size:0.8rem;" onclick="openModal(${i.id}, ${i.qty}, '${i.wanted_by || ''}', '${i.name}')">Bestellen</button>${DEFAULTS.includes(i.name) ? '' : `<button class="delete-btn" onclick="deleteEntry('items', ${i.id})">✕</button>`}</div></div>`;
+            };
+
+            render('defaultItemList', defaultItems, itemTemplate);
+            render('customItemList', customItems, itemTemplate);
+
+            // Themen
+            const { data: topics } = await db.from('topics').select('*').order('id', { ascending: false });
+            render('goodTopics', topics?.filter(t => t.type === 'good'), t => `<div class="list-item good-item"><span>${t.text}</span><button class="delete-btn" onclick="deleteEntry('topics', ${t.id})">✕</button></div>`);
+            render('badTopics', topics?.filter(t => t.type === 'bad'), t => `<div class="list-item bad-item"><span>${t.text}</span><button class="delete-btn" onclick="deleteEntry('topics', ${t.id})">✕</button></div>`);
+        }
+
+        async function removeSingleOrder(itemId, idx) {
+            const { data } = await db.from('items').select('*').eq('id', itemId).single();
+            let wishes = data.wanted_by.split(', ');
+            const qtyToRemove = parseInt(wishes[idx].match(/\((\d+)x\)/)?.[1] || 0);
+            wishes.splice(idx, 1);
+            await db.from('items').update({ qty: Math.max(0, data.qty - qtyToRemove), wanted_by: wishes.join(', ') }).eq('id', itemId);
+            loadAll();
+        }
+
+        function render(id, data, template) { document.getElementById(id).innerHTML = data?.length ? data.map(template).join('') : '<p style="color:#ccc; text-align:center; font-size:0.8rem;">Keine Einträge</p>'; }
+
+        async function voteDate(id, v) {
+            await db.from('dates').update({ votes: v + 1 }).eq('id', id);
+            const vs = JSON.parse(localStorage.getItem('breakfast_votes') || '[]');
+            vs.push(id); localStorage.setItem('breakfast_votes', JSON.stringify(vs));
+            loadAll();
+        }
+
+        async function addDate() {
+            const v = document.getElementById('dateInput').value, u = document.getElementById('dateUser').value;
+            if (v && u) { await db.from('dates').insert([{ value: v, created_by: u, votes: 0 }]); loadAll(); }
+        }
+
+        async function addItem() {
+            const n = document.getElementById('itemName').value, u = document.getElementById('userName').value;
+            if (n && u) { await db.from('items').insert([{ name: n, qty: 1, user_name: u }]); loadAll(); }
+        }
+
+        function openModal(id, qty, wishes, name) { 
+            activeItem = {id, qty, wishes}; 
+            document.getElementById('modalTitle').innerText = name + " bestellen";
+            document.getElementById('orderModal').style.display = 'flex'; 
+        }
+        function closeModal() { document.getElementById('orderModal').style.display = 'none'; }
+        
+        document.getElementById('confirmOrderBtn').onclick = async function() {
+            const name = document.getElementById('modalName').value, num = parseInt(document.getElementById('modalQty').value);
+            if (name && num > 0) {
+                const entry = `${name} (${num}x)`;
+                const wishes = activeItem.wishes ? activeItem.wishes + ", " + entry : entry;
+                await db.from('items').update({ qty: activeItem.qty + num, wanted_by: wishes }).eq('id', activeItem.id);
+                closeModal(); loadAll();
+            }
+        };
+
+        async function addTopic() {
+            const t = document.getElementById('topicInput').value, ty = document.getElementById('topicType').value;
+            if (t) { await db.from('topics').insert([{ text: t, type: ty }]); document.getElementById('topicInput').value = ""; loadAll(); }
+        }
+
+        async function deleteEntry(table, id) { if (confirm('Löschen?')) { await db.from(table).delete().eq('id', id); loadAll(); } }
+
+        loadAll();
+    </script>
+</body>
+</html>                <input type="text" id="userName" placeholder="Dein Name">
                 <button onclick="addItem()">Anbieten</button>
             </div>
             <div id="itemList"></div>
