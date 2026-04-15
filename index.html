@@ -4,16 +4,96 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Breakfast Club</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #fdf6e3; padding: 15px; color: #4e342e; }
         .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); max-width: 550px; margin: 0 auto 20px; border-top: 6px solid #d35400; }
         h1 { text-align: center; color: #d35400; font-size: 2.5rem; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 30px; }
+        h2 { border-bottom: 2px solid #fbd38d; padding-bottom: 8px; color: #a0522d; font-size: 1.3rem; }
+        .row { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        input, select, button { padding: 12px; border-radius: 10px; border: 1px solid #ddd; flex-grow: 1; font-size: 1rem; }
+        button { background: #d35400; color: white; border: none; font-weight: bold; cursor: pointer; flex-grow: 0; transition: 0.2s; }
+        button:hover { background: #a04000; transform: scale(1.05); }
+        .list-item { background: #fff5f5; padding: 12px; border-radius: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #f0e6d2; }
+        .bad { border-left: 6px solid #e74c3c; background: #fff5f5; }
+        .good { border-left: 6px solid #27ae60; background: #f5fff7; }
     </style>
 </head>
 <body>
     <h1>🥓 Breakfast Club</h1>
+
     <div class="card">
-        <p>Wenn du das hier siehst, funktioniert die Seite! 🎉</p>
+        <h2>📅 Wann treffen wir uns?</h2>
+        <div class="row">
+            <input type="date" id="dateInput">
+            <button onclick="addDate()">Vorschlagen</button>
+        </div>
+        <div id="dateList"></div>
     </div>
+
+    <div class="card">
+        <h2>🛒 Mitbring-Liste</h2>
+        <div class="row">
+            <input type="text" id="itemName" placeholder="Was? (z.B. Brötchen)">
+            <input type="number" id="itemQty" placeholder="Stück" style="width: 70px;">
+            <input type="text" id="userName" placeholder="Dein Name">
+            <button onclick="addItem()">Hinzufügen</button>
+        </div>
+        <div id="itemList"></div>
+    </div>
+
+    <div class="card">
+        <h2>💬 Talk-Themen</h2>
+        <div class="row">
+            <input type="text" id="topicInput" placeholder="Worüber reden?">
+            <select id="topicType">
+                <option value="good">👍 Ja, bitte!</option>
+                <option value="bad">🚫 Lieber nicht</option>
+            </select>
+            <button onclick="addTopic()">Posten</button>
+        </div>
+        <div id="topicList"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = "https://zcqtnwcdcdbmgqfdpjbs.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_VoFrsNhdsOjn6XtFTNcWjw_l07gzT-Y";
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function loadAll() {
+            const { data: dates } = await supabase.from('dates').select('*').order('id', { ascending: false });
+            render('dateList', dates, d => `<div class="list-item"><span>${new Date(d.value).toLocaleDateString('de-DE')}</span></div>`);
+
+            const { data: items } = await supabase.from('items').select('*').order('id', { ascending: false });
+            render('itemList', items, i => `<div class="list-item"><span><strong>${i.name}</strong> (${i.qty}x)</span> <span style="font-size: 0.8rem; color: #666;">von ${i.user_name}</span></div>`);
+
+            const { data: topics } = await supabase.from('topics').select('*').order('id', { ascending: false });
+            render('topicList', topics, t => `<div class="list-item ${t.type}"><span>${t.text}</span></div>`);
+        }
+
+        function render(id, data, template) {
+            document.getElementById(id).innerHTML = data?.length ? data.map(template).join('') : '<p style="color:#999; font-size:0.9rem;">Noch keine Einträge...</p>';
+        }
+
+        async function addDate() {
+            const val = document.getElementById('dateInput').value;
+            if (val) { await supabase.from('dates').insert([{ value: val }]); loadAll(); }
+        }
+
+        async function addItem() {
+            const name = document.getElementById('itemName').value;
+            const qty = document.getElementById('itemQty').value || 1;
+            const user = document.getElementById('userName').value;
+            if (name && user) { await supabase.from('items').insert([{ name, qty, user_name: user }]); loadAll(); }
+        }
+
+        async function addTopic() {
+            const text = document.getElementById('topicInput').value;
+            const type = document.getElementById('topicType').value;
+            if (text) { await supabase.from('topics').insert([{ text, type }]); loadAll(); }
+        }
+
+        loadAll();
+    </script>
 </body>
 </html>
