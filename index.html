@@ -3,17 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Breakfast Club | Modern</title>
+    <title>Breakfast Club | New Look</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
-            --primary: #ff4757;
-            --primary-hover: #ff6b81;
-            --bg: #f1f2f6;
+            /* Die neue Petrol-Palette */
+            --primary: #128c7e;          /* Petrol-Grün */
+            --primary-hover: #16aa96;   /* Etwas heller beim Drüberfahren */
+            
+            --bg: #f3f7f7;               /* Sehr helles Grau-Grün */
             --card-bg: #ffffff;
-            --text: #2f3542;
-            --text-light: #747d8c;
-            --success: #2ed573;
+            --text: #1a1e1e;
+            --text-light: #6e7a7a;
+            --success: #27ae60;         /* Abstimm-Grün bleibt */
         }
 
         body { 
@@ -29,8 +31,8 @@
         h1 { 
             text-align: center; 
             font-weight: 800; 
-            font-size: 2.5rem; 
-            margin-bottom: 40px; 
+            font-size: 2.2rem; 
+            margin-bottom: 35px; 
             letter-spacing: -1px;
             color: var(--text);
         }
@@ -38,30 +40,30 @@
         .card { 
             background: var(--card-bg); 
             padding: 24px; 
-            border-radius: 24px; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.04); 
+            border-radius: 20px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.03); 
             margin-bottom: 24px; 
-            border: 1px solid rgba(0,0,0,0.02);
+            border: 1px solid rgba(0,0,0,0.015);
         }
 
         h2 { 
-            font-size: 1.1rem; 
+            font-size: 1.05rem; 
             font-weight: 700; 
             margin-top: 0; 
             margin-bottom: 20px;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 1.2px;
             color: var(--text-light);
         }
 
-        .row { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+        .row { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
 
         input, select { 
-            padding: 14px 18px; 
-            border-radius: 14px; 
-            border: 2px solid #edeff2; 
-            background: #f8f9fa;
-            font-size: 1rem; 
+            padding: 13px 16px; 
+            border-radius: 12px; 
+            border: 2px solid #e1eaea; 
+            background: #fbfdfd;
+            font-size: 0.95rem; 
             flex-grow: 1;
             transition: all 0.2s;
             outline: none;
@@ -70,45 +72,49 @@
         input:focus { border-color: var(--primary); background: #fff; }
 
         button { 
-            padding: 14px 24px; 
-            border-radius: 14px; 
+            padding: 13px 20px; 
+            border-radius: 12px; 
             background: var(--primary); 
             color: white; 
             border: none; 
             font-weight: 700; 
             cursor: pointer; 
-            transition: all 0.2s;
-            box-shadow: 0 4px 12px rgba(255, 71, 87, 0.2);
+            transition: all 0.15s;
+            box-shadow: 0 3px 8px rgba(18, 140, 126, 0.15);
         }
 
-        button:hover { transform: translateY(-2px); background: var(--primary-hover); box-shadow: 0 6px 15px rgba(255, 71, 87, 0.3); }
+        button:hover { transform: translateY(-1.5px); background: var(--primary-hover); box-shadow: 0 5px 12px rgba(18, 140, 126, 0.25); }
         button:active { transform: translateY(0); }
 
         .list-item { 
             background: #fff; 
-            padding: 16px; 
-            border-radius: 16px; 
-            margin-bottom: 12px; 
+            padding: 15px; 
+            border-radius: 14px; 
+            margin-bottom: 10px; 
             display: flex; 
             justify-content: space-between; 
             align-items: center; 
-            border: 1px solid #f1f2f6;
-            transition: all 0.2s;
+            border: 1px solid #f0f4f4;
+            transition: all 0.15s;
         }
 
-        .list-item:hover { border-color: #e1e2e6; transform: scale(1.01); }
+        .list-item:hover { border-color: #d1dadb; transform: scale(1.005); }
 
-        .vote-btn { background: var(--success); box-shadow: 0 4px 12px rgba(46, 213, 115, 0.2); }
-        .unvote-btn { background: #ced4da; color: #495057; box-shadow: none; }
-        .delete-btn { background: #f1f2f6; color: #ff4757; padding: 8px 12px; font-size: 0.8rem; box-shadow: none; margin-left: 8px; }
-        .delete-btn:hover { background: #ffeef0; }
+        .vote-btn { background: var(--success); box-shadow: 0 3px 8px rgba(39, 174, 96, 0.15); }
+        .vote-btn:hover { background: #2ecc71; box-shadow: 0 5px 12px rgba(39, 174, 96, 0.25); }
 
-        .meta { font-size: 0.85rem; color: var(--text-light); margin-top: 4px; display: block; }
-        .voted { border-left: 5px solid var(--success); }
+        .unvote-btn { background: #cbd4d4; color: #3c4545; box-shadow: none; }
+        .unvote-btn:hover { background: #aebaba; }
+
+        .delete-btn { background: #fbfdfd; color: #a1b0b0; padding: 7px 11px; font-size: 0.8rem; box-shadow: none; margin-left: 8px; }
+        .delete-btn:hover { background: #ffeded; color: #ff4757; }
+
+        .meta { font-size: 0.82rem; color: var(--text-light); margin-top: 3px; display: block; }
+        .voted { border-left: 4px solid var(--success); }
         
         /* Bad Topic Style */
-        .bad { background: #fff5f5; border-color: #ffd8d8; }
-        .good { background: #f5fff8; border-color: #d8ffde; }
+        .bad { background: #fff9f9; border-color: #ffeaea; }
+        .good { background: #fafffb; border-color: #eafaea; }
 
         @media (max-width: 480px) {
             .row { flex-direction: column; }
@@ -118,14 +124,14 @@
 </head>
 <body>
     <div class="container">
-        <h1>Breakfast Club 🥓</h1>
+        <h1>☕ Breakfast Club 🥐</h1>
 
         <div class="card">
             <h2>📅 Termin-Voting</h2>
             <div class="row">
                 <input type="date" id="dateInput">
                 <input type="text" id="dateUser" placeholder="Dein Name">
-                <button onclick="addDate()">Vorschlagen</button>
+                <button onclick="addDate()">Dazu</button>
             </div>
             <div id="dateList"></div>
         </div>
@@ -133,10 +139,10 @@
         <div class="card">
             <h2>🛒 Wer bringt was?</h2>
             <div class="row">
-                <input type="text" id="itemName" placeholder="Was? (z.B. Käse)">
+                <input type="text" id="itemName" placeholder="Was? (z.B. Honig)">
                 <input type="number" id="itemQty" placeholder="Stk" style="width: 80px;">
                 <input type="text" id="userName" placeholder="Name">
-                <button onclick="addItem()">Dazu</button>
+                <button onclick="addItem()">Eintragen</button>
             </div>
             <div id="itemList"></div>
         </div>
@@ -144,12 +150,12 @@
         <div class="card">
             <h2>💬 Themen-Check</h2>
             <div class="row">
-                <input type="text" id="topicInput" placeholder="Vorschlag...">
+                <input type="text" id="topicInput" placeholder="Idee...">
                 <select id="topicType">
                     <option value="good">👍 Ja!</option>
                     <option value="bad">🚫 Nein</option>
                 </select>
-                <button onclick="addTopic()">OK</button>
+                <button onclick="addTopic()">Post</button>
             </div>
             <div id="topicList"></div>
         </div>
@@ -172,7 +178,7 @@
                 return `
                 <div class="list-item ${voted ? 'voted' : ''}">
                     <div>
-                        <strong style="font-size: 1.1rem;">${new Date(d.value).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })}</strong>
+                        <strong style="font-size: 1.05rem;">${new Date(d.value).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })}</strong>
                         <span class="meta">Von ${d.created_by || 'Anonym'}</span>
                     </div>
                     <div style="display:flex; align-items:center;">
