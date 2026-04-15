@@ -16,8 +16,10 @@
         button:hover { background: #a04000; transform: scale(1.05); }
         .list-item { background: #fff5f5; padding: 12px; border-radius: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #f0e6d2; }
         .vote-btn { background: #27ae60; margin-left: 10px; }
+        .unvote-btn { background: #95a5a6; margin-left: 10px; }
         .delete-btn { background: #e74c3c; padding: 5px 10px; font-size: 0.8rem; margin-left: 5px; }
         .meta { font-size: 0.8rem; color: #888; display: block; }
+        .voted { border-left: 6px solid #27ae60; }
     </style>
 </head>
 <body>
@@ -62,22 +64,32 @@
         const SUPABASE_KEY = "sb_publishable_VoFrsNhdsOjn6XtFTNcWjw_l07gzT-Y";
         const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+        // Prüft, ob für eine ID schon abgestimmt wurde
+        function hasVoted(id) {
+            const votes = JSON.parse(localStorage.getItem('myVotes') || '[]');
+            return votes.includes(id);
+        }
+
         async function loadAll() {
-            // Termine laden, sortiert nach den meisten Stimmen
             const { data: dates } = await db.from('dates').select('*').order('votes', { ascending: false });
-            render('dateList', dates, d => `
-                <div class="list-item">
+            render('dateList', dates, d => {
+                const voted = hasVoted(d.id);
+                return `
+                <div class="list-item ${voted ? 'voted' : ''}">
                     <div>
                         <strong>${new Date(d.value).toLocaleDateString('de-DE')}</strong>
                         <span class="meta">Vorgeschlagen von: ${d.created_by || 'Anonym'}</span>
                     </div>
                     <div>
                         <span>⭐ ${d.votes || 0}</span>
-                        <button class="vote-btn" onclick="voteDate(${d.id}, ${d.votes || 0})">Abstimmen</button>
+                        ${voted 
+                            ? `<button class="unvote-btn" onclick="unvoteDate(${d.id}, ${d.votes || 0})">Zurücknehmen</button>`
+                            : `<button class="vote-btn" onclick="voteDate(${d.id}, ${d.votes || 0})">Abstimmen</button>`
+                        }
                         <button class="delete-btn" onclick="deleteEntry('dates', ${d.id})">X</button>
                     </div>
                 </div>
-            `);
+            `});
 
             const { data: items } = await db.from('items').select('*').order('id', { ascending: false });
             render('itemList', items, i => `<div class="list-item"><span><strong>${i.name}</strong> (${i.qty}x) von ${i.user_name}</span> <button class="delete-btn" onclick="deleteEntry('items', ${i.id})">Löschen</button></div>`);
@@ -100,7 +112,19 @@
         }
 
         async function voteDate(id, currentVotes) {
+            if (hasVoted(id)) return;
             await db.from('dates').update({ votes: currentVotes + 1 }).eq('id', id);
+            let votes = JSON.parse(localStorage.getItem('myVotes') || '[]');
+            votes.push(id);
+            localStorage.setItem('myVotes', JSON.stringify(votes));
+            loadAll();
+        }
+
+        async function unvoteDate(id, currentVotes) {
+            await db.from('dates').update({ votes: Math.max(0, currentVotes - 1) }).eq('id', id);
+            let votes = JSON.parse(localStorage.getItem('myVotes') || '[]');
+            votes = votes.filter(v => v !== id);
+            localStorage.setItem('myVotes', JSON.stringify(votes));
             loadAll();
         }
 
