@@ -24,6 +24,11 @@
         .card { background: var(--card-bg); padding: 24px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); margin-bottom: 24px; clear: both; }
         h2 { font-size: 1.05rem; font-weight: 700; margin-bottom: 20px; text-transform: uppercase; color: var(--text-light); border-bottom: 2px solid #f0f4f4; padding-bottom: 10px; }
         
+        /* Neue Styles für die Themen-Spalten */
+        .column-header { font-size: 0.9rem; font-weight: 800; margin-bottom: 10px; text-transform: uppercase; }
+        .header-talk { color: var(--success); }
+        .header-nope { color: var(--danger); }
+
         .row { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
         input, select { padding: 13px; border-radius: 12px; border: 2px solid #e1eaea; flex-grow: 1; outline: none; }
         button { padding: 13px 20px; border-radius: 12px; background: var(--primary); color: white; border: none; font-weight: 700; cursor: pointer; transition: 0.15s; }
@@ -94,8 +99,14 @@
                 <button onclick="addTopic()">Posten</button>
             </div>
             <div class="topic-grid">
-                <div id="goodTopics"></div>
-                <div id="badTopics"></div>
+                <div>
+                    <div class="column-header header-talk">Lets talk</div>
+                    <div id="goodTopics"></div>
+                </div>
+                <div>
+                    <div class="column-header header-nope">Nope</div>
+                    <div id="badTopics"></div>
+                </div>
             </div>
         </div>
     </div>
