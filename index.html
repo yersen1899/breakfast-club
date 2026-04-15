@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Breakfast Club | Pro</title>
+    <title>Breakfast Club | Family Edition</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
@@ -26,7 +26,7 @@
         button { padding: 13px 20px; border-radius: 12px; background: var(--primary); color: white; border: none; font-weight: 700; cursor: pointer; transition: 0.15s; }
         button:hover { transform: translateY(-1.5px); opacity: 0.9; }
         .list-item { background: #fff; padding: 15px; border-radius: 14px; margin-bottom: 10px; border: 1px solid #f0f4f4; display: flex; justify-content: space-between; align-items: center; }
-        .plus-btn { background: #e8f4f2; color: var(--primary); font-size: 1.2rem; padding: 5px 15px; margin-left: 10px; }
+        .order-btn { background: #e8f4f2; color: var(--primary); font-size: 0.9rem; padding: 8px 15px; margin-left: 10px; }
         .delete-btn { background: transparent; color: #cedada; padding: 5px; margin-left: 10px; }
         .delete-btn:hover { color: #ff4757; }
         .meta { font-size: 0.8rem; color: var(--text-light); display: block; }
@@ -49,10 +49,10 @@
         </div>
 
         <div class="card">
-            <h2>🛒 Wer bringt was / Bestellungen</h2>
+            <h2>🛒 Wer bringt was / Bestellung</h2>
             <div class="row">
-                <input type="text" id="itemName" placeholder="Was? (z.B. Brötchen)">
-                <input type="number" id="itemQty" placeholder="Start-Menge" value="1" style="width: 80px;">
+                <input type="text" id="itemName" placeholder="Was bringst du mit? (z.B. Brötchen)">
+                <input type="number" id="itemQty" placeholder="Menge" value="0" style="width: 80px;">
                 <input type="text" id="userName" placeholder="Dein Name">
                 <button onclick="addItem()">Anbieten</button>
             </div>
@@ -76,30 +76,27 @@
         const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         async function loadAll() {
-            // Termine
             const { data: dates } = await db.from('dates').select('*').order('votes', { ascending: false });
             render('dateList', dates, d => `
                 <div class="list-item ${JSON.parse(localStorage.getItem('myVotes') || '[]').includes(d.id) ? 'voted' : ''}">
                     <div><strong>${new Date(d.value).toLocaleDateString('de-DE')}</strong><span class="meta">Von ${d.created_by}</span></div>
-                    <div><span>⭐ ${d.votes}</span> <button class="plus-btn" onclick="voteDate(${d.id}, ${d.votes})">👍</button></div>
+                    <div><span>⭐ ${d.votes}</span> <button class="order-btn" onclick="voteDate(${d.id}, ${d.votes})">Vote</button></div>
                 </div>`);
 
-            // Items / Bestellungen
             const { data: items } = await db.from('items').select('*').order('id', { ascending: false });
             render('itemList', items, i => `
                 <div class="list-item">
                     <div>
                         <strong style="font-size:1.1rem;">${i.qty}x ${i.name}</strong>
-                        <span class="meta">Besorgt von: ${i.user_name}</span>
-                        ${i.wanted_by ? `<span class="meta" style="color:var(--primary)">Zusatzwünsche von: ${i.wanted_by}</span>` : ''}
+                        <span class="meta">Wird besorgt von: ${i.user_name}</span>
+                        ${i.wanted_by ? `<span class="meta" style="color:var(--primary); font-weight:600;">Bestellungen: ${i.wanted_by}</span>` : ''}
                     </div>
                     <div style="display:flex; align-items:center;">
-                        <button class="plus-btn" onclick="orderMore(${i.id}, ${i.qty}, '${i.wanted_by || ''}')">+1</button>
+                        <button class="order-btn" onclick="orderCustom(${i.id}, ${i.qty}, '${i.wanted_by || ''}')">Bestellen</button>
                         <button class="delete-btn" onclick="deleteEntry('items', ${i.id})">✕</button>
                     </div>
                 </div>`);
 
-            // Themen
             const { data: topics } = await db.from('topics').select('*').order('id', { ascending: false });
             render('topicList', topics, t => `<div class="list-item ${t.type}"><span>${t.text}</span><button class="delete-btn" onclick="deleteEntry('topics', ${t.id})">✕</button></div>`);
         }
@@ -110,16 +107,24 @@
 
         async function addItem() {
             const name = document.getElementById('itemName').value;
-            const qty = document.getElementById('itemQty').value;
+            const qty = parseInt(document.getElementById('itemQty').value) || 0;
             const user = document.getElementById('userName').value;
             if (name && user) { await db.from('items').insert([{ name, qty, user_name: user }]); loadAll(); }
         }
 
-        async function orderMore(id, currentQty, currentWishes) {
-            const myName = prompt("Wer möchte noch eins?");
-            if (myName) {
-                const newWishes = currentWishes ? currentWishes + ", " + myName : myName;
-                await db.from('items').update({ qty: currentQty + 1, wanted_by: newWishes }).eq('id', id);
+        async function orderCustom(id, currentQty, currentWishes) {
+            const name = prompt("Dein Name / Familienname:");
+            if (!name) return;
+            const amount = prompt("Wie viele Stück möchtest du?", "1");
+            const numAmount = parseInt(amount);
+
+            if (name && !isNaN(numAmount) && numAmount > 0) {
+                const newWishEntry = `${name} (${numAmount}x)`;
+                const newWishes = currentWishes ? currentWishes + ", " + newWishEntry : newWishEntry;
+                await db.from('items').update({ 
+                    qty: currentQty + numAmount, 
+                    wanted_by: newWishes 
+                }).eq('id', id);
                 loadAll();
             }
         }
