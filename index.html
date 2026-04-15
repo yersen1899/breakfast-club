@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Breakfast Club | Bäcker</title>
+    <title>The Breakfast Club</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
@@ -119,6 +119,7 @@
         let activeItem = {};
 
         async function loadAll() {
+            // TERMINE
             const { data: dates } = await db.from('dates').select('*').order('votes', { ascending: false });
             const maxVotes = dates?.length > 0 ? Math.max(...dates.map(d => d.votes)) : 0;
             render('dateList', dates, d => {
@@ -127,10 +128,18 @@
                 return `<div class="list-item ${isWinner ? 'winner' : ''}"><div><strong>${isWinner ? '👑 ' : ''}${new Date(d.value).toLocaleDateString('de-DE')}</strong><span class="meta">Von ${d.created_by}</span></div><div style="display:flex; align-items:center;"><span style="font-weight:bold; margin-right:10px;">${d.votes} ⭐</span><button onclick="voteDate(${d.id}, ${d.votes})" ${voted ? 'disabled' : ''}>Vote</button><button class="delete-btn" onclick="deleteEntry('dates', ${d.id})">✕</button></div></div>`;
             });
 
+            // ITEMS & BÄCKER CHECK
             const { data: items } = await db.from('items').select('*').order('id', { ascending: true });
-            if (items && items.length === 0) {
-                for (const name of DEFAULTS) { await db.from('items').insert([{ name, qty: 0, user_name: 'Bäcker' }]); }
-                loadAll(); return;
+            
+            // Prüfe, welche Brötchen fehlen
+            const currentNames = items ? items.map(i => i.name) : [];
+            const missing = DEFAULTS.filter(name => !currentNames.includes(name));
+
+            if (missing.length > 0) {
+                for (const m of missing) {
+                    await db.from('items').insert([{ name: m, qty: 0, user_name: 'Bäcker' }]);
+                }
+                loadAll(); return; 
             }
 
             const sortedItems = items.sort((a, b) => {
@@ -151,155 +160,7 @@
             render('defaultItemList', bakerItems, itemTemplate);
             render('customItemList', customItems, itemTemplate);
 
-            const { data: topics } = await db.from('topics').select('*').order('id', { ascending: false });
-            render('goodTopics', topics?.filter(t => t.type === 'good'), t => `<div class="list-item" style="border-left:4px solid var(--success)"><span>${t.text}</span><button class="delete-btn" onclick="deleteEntry('topics', ${t.id})">✕</button></div>`);
-            render('badTopics', topics?.filter(t => t.type === 'bad'), t => `<div class="list-item" style="border-left:4px solid var(--danger)"><span>${t.text}</span><button class="delete-btn" onclick="deleteEntry('topics', ${t.id})">✕</button></div>`);
-        }
-
-        async function addExtraBrötchen() {
-            const name = document.getElementById('extraBrötchenName').value;
-            if (name) { 
-                await db.from('items').insert([{ name, qty: 0, user_name: 'Bäcker' }]); 
-                document.getElementById('extraBrötchenName').value = "";
-                loadAll(); 
-            }
-        }
-
-        async function removeSingleOrder(itemId, idx) {
-            const { data } = await db.from('items').select('*').eq('id', itemId).single();
-            let wishes = data.wanted_by.split(', ');
-            const qtyToRemove = parseInt(wishes[idx].match(/\((\d+)x\)/)?.[1] || 0);
-            wishes.splice(idx, 1);
-            await db.from('items').update({ qty: Math.max(0, data.qty - qtyToRemove), wanted_by: wishes.join(', ') }).eq('id', itemId);
-            loadAll();
-        }
-
-        function render(id, data, template) { document.getElementById(id).innerHTML = data?.length ? data.map(template).join('') : '<p style="color:#ccc; text-align:center; font-size:0.8rem;">Keine Einträge</p>'; }
-
-        async function voteDate(id, v) {
-            await db.from('dates').update({ votes: v + 1 }).eq('id', id);
-            const vs = JSON.parse(localStorage.getItem('breakfast_votes') || '[]');
-            vs.push(id); localStorage.setItem('breakfast_votes', JSON.stringify(vs));
-            loadAll();
-        }
-
-        async function addDate() {
-            const v = document.getElementById('dateInput').value, u = document.getElementById('dateUser').value;
-            if (v && u) { await db.from('dates').insert([{ value: v, created_by: u, votes: 0 }]); loadAll(); }
-        }
-
-        async function addItem() {
-            const n = document.getElementById('itemName').value, u = document.getElementById('userName').value;
-            if (n && u) { await db.from('items').insert([{ name: n, qty: 1, user_name: u }]); loadAll(); }
-        }
-
-        function openModal(id, qty, wishes, name) { 
-            activeItem = {id, qty, wishes}; 
-            document.getElementById('modalTitle').innerText = name + " bestellen";
-            document.getElementById('orderModal').style.display = 'flex'; 
-        }
-        function closeModal() { document.getElementById('orderModal').style.display = 'none'; }
-        
-        document.getElementById('confirmOrderBtn').onclick = async function() {
-            const name = document.getElementById('modalName').value, num = parseInt(document.getElementById('modalQty').value);
-            if (name && num > 0) {
-                const entry = `${name} (${num}x)`;
-                const wishes = activeItem.wishes ? activeItem.wishes + ", " + entry : entry;
-                await db.from('items').update({ qty: activeItem.qty + num, wanted_by: wishes }).eq('id', activeItem.id);
-                closeModal(); loadAll();
-            }
-        };
-
-        async function addTopic() {
-            const t = document.getElementById('topicInput').value, ty = document.getElementById('topicType').value;
-            if (t) { await db.from('topics').insert([{ text: t, type: ty }]); document.getElementById('topicInput').value = ""; loadAll(); }
-        }
-
-        async function deleteEntry(table, id) { if (confirm('Wirklich löschen?')) { await db.from(table).delete().eq('id', id); loadAll(); } }
-
-        loadAll();
-    </script>
-</body>
-</html>                <button onclick="addExtraBrötchen()" style="background: var(--text-light);">Hinzufügen</button>
-            </div>
-        </div>
-
-        <div class="card">
-            <h2>🍯 Wer bringt was mit?</h2>
-            <div class="row">
-                <input type="text" id="itemName" placeholder="z.B. Nutella, Käse, Eier...">
-                <input type="text" id="userName" placeholder="Dein Name">
-                <button onclick="addItem()">Eintragen</button>
-            </div>
-            <div id="customItemList"></div>
-        </div>
-
-        <div class="card">
-            <h2>💬 Themen-Check</h2>
-            <div class="row">
-                <input type="text" id="topicInput" placeholder="Thema...">
-                <select id="topicType"><option value="good">👍 Redebedarf</option><option value="bad">🚫 Tabu</option></select>
-                <button onclick="addTopic()">Posten</button>
-            </div>
-            <div class="topic-grid">
-                <div id="goodTopics"></div>
-                <div id="badTopics"></div>
-            </div>
-        </div>
-    </div>
-
-    <div id="orderModal"><div class="modal-content">
-        <h3 id="modalTitle">Bestellung</h3>
-        <input type="text" id="modalName" placeholder="Dein Name" style="width:100%; padding:12px; margin-bottom:10px; border-radius:10px; border:1px solid #ddd; box-sizing: border-box;">
-        <input type="number" id="modalQty" value="1" style="width:100%; padding:12px; margin-bottom:20px; border-radius:10px; border:1px solid #ddd; box-sizing: border-box;">
-        <div style="display:flex; gap:10px;">
-            <button id="confirmOrderBtn" style="flex:1;">Bestätigen</button>
-            <button onclick="closeModal()" style="background:#cedada; color:#1a1e1e; flex:1;">Abbruch</button>
-        </div>
-    </div></div>
-
-    <script>
-        const SUPABASE_URL = "https://zcqtnwcdcdbmgqfdpjbs.supabase.co";
-        const SUPABASE_KEY = "sb_publishable_VoFrsNhdsOjn6XtFTNcWjw_l07gzT-Y";
-        const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        // Körnerbrötchen an Position 1
-        const DEFAULTS = ['Körnerbrötchen', 'normale Brötchen', 'Croissant', 'Laugenstange', 'Laugenbrötchen'];
-        let activeItem = {};
-
-        async function loadAll() {
-            const { data: dates } = await db.from('dates').select('*').order('votes', { ascending: false });
-            const maxVotes = dates?.length > 0 ? Math.max(...dates.map(d => d.votes)) : 0;
-            render('dateList', dates, d => {
-                const isWinner = d.votes > 0 && d.votes === maxVotes;
-                const voted = JSON.parse(localStorage.getItem('breakfast_votes') || '[]').includes(d.id);
-                return `<div class="list-item ${isWinner ? 'winner' : ''}"><div><strong>${isWinner ? '👑 ' : ''}${new Date(d.value).toLocaleDateString('de-DE')}</strong><span class="meta">Von ${d.created_by}</span></div><div style="display:flex; align-items:center;"><span style="font-weight:bold; margin-right:10px;">${d.votes} ⭐</span><button onclick="voteDate(${d.id}, ${d.votes})" ${voted ? 'disabled' : ''}>Vote</button><button class="delete-btn" onclick="deleteEntry('dates', ${d.id})">✕</button></div></div>`;
-            });
-
-            const { data: items } = await db.from('items').select('*').order('id', { ascending: true });
-            if (items && items.length === 0) {
-                for (const name of DEFAULTS) { await db.from('items').insert([{ name, qty: 0, user_name: 'Bäcker' }]); }
-                loadAll(); return;
-            }
-
-            // Sortierung: Körnerbrötchen immer zuerst
-            const sortedItems = items.sort((a, b) => {
-                if (a.name === 'Körnerbrötchen') return -1;
-                if (b.name === 'Körnerbrötchen') return 1;
-                return 0;
-            });
-
-            const defaultItems = sortedItems.filter(i => DEFAULTS.includes(i.name) || i.user_name === 'Bäcker');
-            const customItems = sortedItems.filter(i => !DEFAULTS.includes(i.name) && i.user_name !== 'Bäcker');
-
-            const itemTemplate = i => {
-                const tags = i.wanted_by ? i.wanted_by.split(', ').map((w, idx) => `<span class="order-tag">${w} <span onclick="removeSingleOrder(${i.id}, ${idx})">✕</span></span>`).join('') : '';
-                return `<div class="list-item"><div><strong>${i.qty > 0 ? i.qty + 'x ' : ''}${i.name}</strong><span class="meta">${i.user_name === 'Bäcker' ? 'Vom Bäcker' : 'Von: ' + i.user_name}</span><div style="margin-top:5px;">${tags}</div></div><div style="display:flex; align-items:center;"><button style="background:#e8f4f2; color:var(--primary); padding:8px; font-size:0.8rem;" onclick="openModal(${i.id}, ${i.qty}, '${i.wanted_by || ''}', '${i.name}')">Bestellen</button>${i.user_name === 'Bäcker' ? '' : `<button class="delete-btn" onclick="deleteEntry('items', ${i.id})">✕</button>`}</div></div>`;
-            };
-
-            render('defaultItemList', defaultItems, itemTemplate);
-            render('customItemList', customItems, itemTemplate);
-
+            // THEMEN
             const { data: topics } = await db.from('topics').select('*').order('id', { ascending: false });
             render('goodTopics', topics?.filter(t => t.type === 'good'), t => `<div class="list-item" style="border-left:4px solid var(--success)"><span>${t.text}</span><button class="delete-btn" onclick="deleteEntry('topics', ${t.id})">✕</button></div>`);
             render('badTopics', topics?.filter(t => t.type === 'bad'), t => `<div class="list-item" style="border-left:4px solid var(--danger)"><span>${t.text}</span><button class="delete-btn" onclick="deleteEntry('topics', ${t.id})">✕</button></div>`);
