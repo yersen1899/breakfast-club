@@ -7,7 +7,251 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
+            --primary: #128c7e;<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Breakfast Club</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
             --primary: #128c7e;
+            --primary-hover: #16aa96;
+            --bg: #f3f7f7;
+            --card-bg: #ffffff;
+            --text: #1a1e1e;
+            --text-light: #6e7a7a;
+            --success: #27ae60;
+            --danger: #e74c3c;
+            --gold: #f1c40f;
+        }
+
+        body { font-family: -apple-system, sans-serif; background: var(--bg); padding: 20px; color: var(--text); line-height: 1.6; }
+        .container { max-width: 600px; margin: 0 auto; }
+        h1 { text-align: center; font-weight: 800; font-size: 2.2rem; margin-bottom: 35px; }
+        .card { background: var(--card-bg); padding: 24px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); margin-bottom: 24px; clear: both; }
+        h2 { font-size: 1.05rem; font-weight: 700; margin-bottom: 20px; text-transform: uppercase; color: var(--text-light); border-bottom: 2px solid #f0f4f4; padding-bottom: 10px; }
+        
+        .row { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        input, select { padding: 13px; border-radius: 12px; border: 2px solid #e1eaea; flex-grow: 1; outline: none; }
+        button { padding: 13px 20px; border-radius: 12px; background: var(--primary); color: white; border: none; font-weight: 700; cursor: pointer; transition: 0.15s; }
+        
+        .list-item { background: #fff; padding: 15px; border-radius: 14px; margin-bottom: 10px; border: 1px solid #f0f4f4; display: flex; justify-content: space-between; align-items: center; }
+        
+        .order-tag { 
+            display: inline-flex; align-items: center; background: #e8f4f2; color: var(--primary); 
+            padding: 2px 8px; border-radius: 8px; font-size: 0.75rem; margin: 2px; font-weight: 600;
+        }
+        .order-tag span { cursor: pointer; margin-left: 6px; color: var(--danger); font-weight: bold; }
+
+        .winner { border: 3px solid var(--gold); background: #fffdf5; }
+        .topic-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; }
+        
+        #orderModal {
+            display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.4); align-items: center; justify-content: center;
+        }
+        .modal-content { background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; }
+        .delete-btn { background: transparent; color: #cedada; padding: 5px; cursor: pointer; border: none; font-size: 1.1rem; }
+        .delete-btn:hover { color: var(--danger); }
+        .meta { font-size: 0.8rem; color: var(--text-light); display: block; }
+        .location-badge { font-size: 0.85rem; color: var(--primary); font-weight: 600; display: block; margin-top: 2px; }
+
+        @media (max-width: 500px) { .topic-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>☕ Breakfast Club 🥐</h1>
+
+        <div class="card">
+            <h2>📅 Wann frühstücken wir?</h2>
+            <div class="row">
+                <input type="date" id="dateInput">
+                <input type="text" id="dateLocation" placeholder="Ort (z.B. Büro)">
+                <input type="text" id="dateUser" placeholder="Dein Name" style="flex-basis: 100%;">
+                <button onclick="addDate()" style="width: 100%;">Termin vorschlagen</button>
+            </div>
+            <div id="dateList"></div>
+        </div>
+
+        <div class="card">
+            <h2>🥐 Bäcker Bestellung</h2>
+            <div id="defaultItemList"></div>
+            
+            <div class="row" style="margin-top: 20px; border-top: 1px solid #f0f4f4; padding-top: 20px;">
+                <input type="text" id="extraBrötchenName" placeholder="Andere Sorte hinzufügen...">
+                <button onclick="addExtraBrötchen()" style="background: #aab8b8;">+</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🍯 Wer bringt was mit?</h2>
+            <div class="row">
+                <input type="text" id="itemName" placeholder="Nutella, Käse, Eier...">
+                <input type="text" id="userName" placeholder="Dein Name">
+                <button onclick="addItem()">Eintragen</button>
+            </div>
+            <div id="customItemList"></div>
+        </div>
+
+        <div class="card">
+            <h2>💬 Themen-Check</h2>
+            <div class="row">
+                <input type="text" id="topicInput" placeholder="Thema...">
+                <select id="topicType"><option value="good">👍 Redebedarf</option><option value="bad">🚫 Tabu</option></select>
+                <button onclick="addTopic()">Posten</button>
+            </div>
+            <div class="topic-grid">
+                <div id="goodTopics"></div>
+                <div id="badTopics"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="orderModal"><div class="modal-content">
+        <h3 id="modalTitle">Bestellung</h3>
+        <input type="text" id="modalName" placeholder="Dein Name" style="width:100%; padding:12px; margin-bottom:10px; border-radius:10px; border:1px solid #ddd; box-sizing: border-box;">
+        <input type="number" id="modalQty" value="1" style="width:100%; padding:12px; margin-bottom:20px; border-radius:10px; border:1px solid #ddd; box-sizing: border-box;">
+        <div style="display:flex; gap:10px;">
+            <button id="confirmOrderBtn" style="flex:1;">Bestätigen</button>
+            <button onclick="closeModal()" style="background:#cedada; color:#1a1e1e; flex:1;">Abbruch</button>
+        </div>
+    </div></div>
+
+    <script>
+        const SUPABASE_URL = "https://zcqtnwcdcdbmgqfdpjbs.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_VoFrsNhdsOjn6XtFTNcWjw_l07gzT-Y";
+        const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const DEFAULTS = ['Körnerbrötchen', 'normale Brötchen', 'Croissant', 'Laugenstange', 'Laugenbrötchen'];
+        let activeItem = {};
+
+        async function loadAll() {
+            // TERMINE
+            const { data: dates } = await db.from('dates').select('*').order('votes', { ascending: false });
+            const maxVotes = dates?.length > 0 ? Math.max(...dates.map(d => d.votes)) : 0;
+            render('dateList', dates, d => {
+                const isWinner = d.votes > 0 && d.votes === maxVotes;
+                const voted = JSON.parse(localStorage.getItem('breakfast_votes') || '[]').includes(d.id);
+                return `<div class="list-item ${isWinner ? 'winner' : ''}">
+                    <div>
+                        <strong>${isWinner ? '👑 ' : ''}${new Date(d.value).toLocaleDateString('de-DE')}</strong>
+                        ${d.location ? `<span class="location-badge">📍 ${d.location}</span>` : ''}
+                        <span class="meta">Von ${d.created_by}</span>
+                    </div>
+                    <div style="display:flex; align-items:center;">
+                        <span style="font-weight:bold; margin-right:10px;">${d.votes} ⭐</span>
+                        <button onclick="voteDate(${d.id}, ${d.votes})" ${voted ? 'disabled' : ''}>Vote</button>
+                        <button class="delete-btn" onclick="deleteEntry('dates', ${d.id})">✕</button>
+                    </div>
+                </div>`;
+            });
+
+            // ITEMS
+            const { data: items } = await db.from('items').select('*').order('id', { ascending: true });
+            const currentNames = items ? items.map(i => i.name) : [];
+            const missing = DEFAULTS.filter(name => !currentNames.includes(name));
+
+            if (missing.length > 0) {
+                for (const m of missing) { await db.from('items').insert([{ name: m, qty: 0, user_name: 'Bäcker' }]); }
+                loadAll(); return; 
+            }
+
+            const sortedItems = items.sort((a, b) => {
+                if (a.name === 'Körnerbrötchen') return -1;
+                if (b.name === 'Körnerbrötchen') return 1;
+                return 0;
+            });
+
+            const bakerItems = sortedItems.filter(i => i.user_name === 'Bäcker' || i.user_name === 'System');
+            const customItems = sortedItems.filter(i => i.user_name !== 'Bäcker' && i.user_name !== 'System');
+
+            const itemTemplate = i => {
+                const tags = i.wanted_by ? i.wanted_by.split(', ').map((w, idx) => `<span class="order-tag">${w} <span onclick="removeSingleOrder(${i.id}, ${idx})">✕</span></span>`).join('') : '';
+                const isProtected = DEFAULTS.includes(i.name);
+                const isBakerEntry = i.user_name === 'Bäcker' || i.user_name === 'System';
+                return `<div class="list-item"><div><strong>${i.qty > 0 ? i.qty + 'x ' : ''}${i.name}</strong><span class="meta">${isBakerEntry ? 'Bäcker-Sortiment' : 'Von: ' + i.user_name}</span><div style="margin-top:5px;">${tags}</div></div><div style="display:flex; align-items:center;"><button style="background:#e8f4f2; color:var(--primary); padding:8px; font-size:0.8rem;" onclick="openModal(${i.id}, ${i.qty}, '${i.wanted_by || ''}', '${i.name}')">Bestellen</button>${isProtected ? '' : `<button class="delete-btn" onclick="deleteEntry('items', ${i.id})">✕</button>`}</div></div>`;
+            };
+
+            render('defaultItemList', bakerItems, itemTemplate);
+            render('customItemList', customItems, itemTemplate);
+
+            // THEMEN
+            const { data: topics } = await db.from('topics').select('*').order('id', { ascending: false });
+            render('goodTopics', topics?.filter(t => t.type === 'good'), t => `<div class="list-item" style="border-left:4px solid var(--success)"><span>${t.text}</span><button class="delete-btn" onclick="deleteEntry('topics', ${t.id})">✕</button></div>`);
+            render('badTopics', topics?.filter(t => t.type === 'bad'), t => `<div class="list-item" style="border-left:4px solid var(--danger)"><span>${t.text}</span><button class="delete-btn" onclick="deleteEntry('topics', ${t.id})">✕</button></div>`);
+        }
+
+        async function addDate() {
+            const v = document.getElementById('dateInput').value;
+            const loc = document.getElementById('dateLocation').value;
+            const u = document.getElementById('dateUser').value;
+            if (v && u) { 
+                // Stelle sicher, dass die Spalte 'location' in deiner Supabase Tabelle 'dates' existiert!
+                await db.from('dates').insert([{ value: v, location: loc, created_by: u, votes: 0 }]); 
+                document.getElementById('dateLocation').value = "";
+                loadAll(); 
+            }
+        }
+
+        async function addExtraBrötchen() {
+            const name = document.getElementById('extraBrötchenName').value;
+            if (name) { await db.from('items').insert([{ name, qty: 0, user_name: 'Bäcker' }]); document.getElementById('extraBrötchenName').value = ""; loadAll(); }
+        }
+
+        async function removeSingleOrder(itemId, idx) {
+            const { data } = await db.from('items').select('*').eq('id', itemId).single();
+            let wishes = data.wanted_by.split(', ');
+            const qtyToRemove = parseInt(wishes[idx].match(/\((\d+)x\)/)?.[1] || 0);
+            wishes.splice(idx, 1);
+            await db.from('items').update({ qty: Math.max(0, data.qty - qtyToRemove), wanted_by: wishes.join(', ') }).eq('id', itemId);
+            loadAll();
+        }
+
+        function render(id, data, template) { document.getElementById(id).innerHTML = data?.length ? data.map(template).join('') : '<p style="color:#ccc; text-align:center; font-size:0.8rem;">Keine Einträge</p>'; }
+
+        async function voteDate(id, v) {
+            await db.from('dates').update({ votes: v + 1 }).eq('id', id);
+            const vs = JSON.parse(localStorage.getItem('breakfast_votes') || '[]');
+            vs.push(id); localStorage.setItem('breakfast_votes', JSON.stringify(vs));
+            loadAll();
+        }
+
+        async function addItem() {
+            const n = document.getElementById('itemName').value, u = document.getElementById('userName').value;
+            if (n && u) { await db.from('items').insert([{ name: n, qty: 1, user_name: u }]); loadAll(); }
+        }
+
+        function openModal(id, qty, wishes, name) { 
+            activeItem = {id, qty, wishes}; 
+            document.getElementById('modalTitle').innerText = name + " bestellen";
+            document.getElementById('orderModal').style.display = 'flex'; 
+        }
+        function closeModal() { document.getElementById('orderModal').style.display = 'none'; }
+        
+        document.getElementById('confirmOrderBtn').onclick = async function() {
+            const name = document.getElementById('modalName').value, num = parseInt(document.getElementById('modalQty').value);
+            if (name && num > 0) {
+                const entry = `${name} (${num}x)`;
+                const wishes = activeItem.wishes ? activeItem.wishes + ", " + entry : entry;
+                await db.from('items').update({ qty: activeItem.qty + num, wanted_by: wishes }).eq('id', activeItem.id);
+                closeModal(); loadAll();
+            }
+        };
+
+        async function addTopic() {
+            const t = document.getElementById('topicInput').value, ty = document.getElementById('topicType').value;
+            if (t) { await db.from('topics').insert([{ text: t, type: ty }]); document.getElementById('topicInput').value = ""; loadAll(); }
+        }
+
+        async function deleteEntry(table, id) { if (confirm('Löschen?')) { await db.from(table).delete().eq('id', id); loadAll(); } }
+
+        loadAll();
+    </script>
+</body>
+</html>
             --primary-hover: #16aa96;
             --bg: #f3f7f7;
             --card-bg: #ffffff;
