@@ -1,0 +1,126 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2575.7">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
+  </style>
+</head>
+<body>
+<p class="p1">&lt;!DOCTYPE html&gt;</p>
+<p class="p1">&lt;html lang="de"&gt;</p>
+<p class="p1">&lt;head&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta charset="UTF-8"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;title&gt;The Breakfast Club&lt;/title&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;style&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #fdf6e3; padding: 15px; color: #4e342e; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); max-width: 550px; margin: 0 auto 20px; border-top: 6px solid #d35400; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>h1 { text-align: center; color: #d35400; font-size: 2.5rem; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 30px; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>h2 { border-bottom: 2px solid #fbd38d; padding-bottom: 8px; color: #a0522d; font-size: 1.3rem; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.row { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>input, select, button { padding: 12px; border-radius: 10px; border: 1px solid #ddd; flex-grow: 1; font-size: 1rem; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>button { background: #d35400; color: white; border: none; font-weight: bold; cursor: pointer; flex-grow: 0; transition: 0.2s; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>button:hover { background: #a04000; transform: scale(1.05); }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.list-item { background: #fffcf5; padding: 12px; border-radius: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #f0e6d2; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.bad { border-left: 6px solid #e74c3c; background: #fff5f5; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.good { border-left: 6px solid #27ae60; background: #f5fff7; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.tag { font-size: 0.8rem; background: #eee; padding: 3px 8px; border-radius: 15px; color: #666; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/style&gt;</p>
+<p class="p1">&lt;/head&gt;</p>
+<p class="p1">&lt;body&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;h1&gt;🥓 Breakfast Club&lt;/h1&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="card"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;h2&gt;📅 Wann treffen wir uns?&lt;/h2&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="row"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;input type="date" id="dateInput"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;button onclick="addDate()"&gt;Vorschlagen&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div id="dateList"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="card"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;h2&gt;🛒 Mitbring-Liste&lt;/h2&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="row"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;input type="text" id="itemName" placeholder="Was? (z.B. Brötchen)"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;input type="number" id="itemQty" placeholder="Stück" style="width: 70px;"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;input type="text" id="userName" placeholder="Dein Name"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;button onclick="addItem()"&gt;Hinzufügen&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div id="itemList"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="card"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;h2&gt;💬 Talk-Themen&lt;/h2&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="row"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;input type="text" id="topicInput" placeholder="Worüber reden?"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;select id="topicType"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;option value="good"&gt;👍 Ja, bitte!&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;option value="bad"&gt;🚫 Lieber nicht&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;/select&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;button onclick="addTopic()"&gt;Posten&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div id="topicList"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;script&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>// Aktuell lokale Speicherung (nur auf deinem Gerät sichtbar)</p>
+<p class="p1"><span class="Apple-converted-space">        </span>function render(id, storageKey, templateFn) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const data = JSON.parse(localStorage.getItem(storageKey) || '[]');</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const container = document.getElementById(id);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>container.innerHTML = data.length === 0 ? '&lt;p style="color:#999; font-size:0.9rem;"&gt;Noch keine Einträge...&lt;/p&gt;' : data.map(templateFn).join('');</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function addDate() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const val = document.getElementById('dateInput').value;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if(!val) return;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const data = JSON.parse(localStorage.getItem('dates') || '[]');</p>
+<p class="p1"><span class="Apple-converted-space">            </span>data.push({date: val});</p>
+<p class="p1"><span class="Apple-converted-space">            </span>localStorage.setItem('dates', JSON.stringify(data));</p>
+<p class="p1"><span class="Apple-converted-space">            </span>loadAll();</p>
+<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('dateInput').value = '';</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function addItem() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const name = document.getElementById('itemName').value;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const qty = document.getElementById('itemQty').value || 1;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const user = document.getElementById('userName').value;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if(!name || !user) return alert("Bitte was und wer eintragen!");</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const data = JSON.parse(localStorage.getItem('items') || '[]');</p>
+<p class="p1"><span class="Apple-converted-space">            </span>data.push({name, qty, user});</p>
+<p class="p1"><span class="Apple-converted-space">            </span>localStorage.setItem('items', JSON.stringify(data));</p>
+<p class="p1"><span class="Apple-converted-space">            </span>loadAll();</p>
+<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('itemName').value = '';</p>
+<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('itemQty').value = '';</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function addTopic() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const text = document.getElementById('topicInput').value;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const type = document.getElementById('topicType').value;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if(!text) return;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const data = JSON.parse(localStorage.getItem('topics') || '[]');</p>
+<p class="p1"><span class="Apple-converted-space">            </span>data.push({text, type});</p>
+<p class="p1"><span class="Apple-converted-space">            </span>localStorage.setItem('topics', JSON.stringify(data));</p>
+<p class="p1"><span class="Apple-converted-space">            </span>loadAll();</p>
+<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('topicInput').value = '';</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>function loadAll() {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>render('dateList', 'dates', d =&gt; `&lt;div class="list-item"&gt;&lt;span&gt;${new Date(d.date).toLocaleDateString('de-DE', {weekday: 'long', day: '2-digit', month: '2-digit'})}&lt;/span&gt;&lt;/div&gt;`);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>render('itemList', 'items', i =&gt; `&lt;div class="list-item"&gt;&lt;span&gt;&lt;b&gt;${i.qty}x&lt;/b&gt; ${i.name}&lt;/span&gt; &lt;span class="tag"&gt;von ${i.user}&lt;/span&gt;&lt;/div&gt;`);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>render('topicList', 'topics', t =&gt; `&lt;div class="list-item ${t.type}"&gt;&lt;span&gt;${t.text}&lt;/span&gt;&lt;/div&gt;`);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>window.onload = loadAll;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/script&gt;</p>
+<p class="p1">&lt;/body&gt;</p>
+<p class="p1">&lt;/html&gt;</p>
+</body>
+</html>
