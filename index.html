@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Breakfast Club | Topics</title>
+    <title>Breakfast Club | Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
@@ -15,39 +15,37 @@
             --text-light: #6e7a7a;
             --success: #27ae60;
             --danger: #e74c3c;
+            --gold: #f1c40f;
         }
 
         body { font-family: -apple-system, sans-serif; background: var(--bg); padding: 20px; color: var(--text); line-height: 1.6; }
         .container { max-width: 600px; margin: 0 auto; }
         h1 { text-align: center; font-weight: 800; font-size: 2.2rem; margin-bottom: 35px; }
-        .card { background: var(--card-bg); padding: 24px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); margin-bottom: 24px; }
+        .card { background: var(--card-bg); padding: 24px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); margin-bottom: 24px; position: relative; }
         h2 { font-size: 1.05rem; font-weight: 700; margin-bottom: 20px; text-transform: uppercase; color: var(--text-light); border-bottom: 2px solid #f0f4f4; padding-bottom: 10px; }
         .row { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
         input, select { padding: 13px; border-radius: 12px; border: 2px solid #e1eaea; flex-grow: 1; outline: none; }
         button { padding: 13px 20px; border-radius: 12px; background: var(--primary); color: white; border: none; font-weight: 700; cursor: pointer; transition: 0.15s; }
-        button:hover { transform: translateY(-1.5px); opacity: 0.9; }
+        button:disabled { background: #cbd4d4; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
         
-        .list-item { background: #fff; padding: 15px; border-radius: 14px; margin-bottom: 10px; border: 1px solid #f0f4f4; display: flex; justify-content: space-between; align-items: center; }
-        .meta { font-size: 0.8rem; color: var(--text-light); display: block; }
+        .list-item { background: #fff; padding: 15px; border-radius: 14px; margin-bottom: 10px; border: 1px solid #f0f4f4; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
+        
+        /* Highlight für den Gewinner-Termin */
+        .winner { border: 3px solid var(--gold); box-shadow: 0 0 15px rgba(241, 196, 15, 0.2); background: #fffdf5; }
+        .crown { color: var(--gold); font-size: 1.2rem; margin-right: 5px; }
 
-        /* Themen-Spezifisch */
         .topic-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .topic-column h3 { font-size: 0.9rem; margin-bottom: 15px; text-align: center; }
-        .good-title { color: var(--success); }
-        .bad-title { color: var(--danger); }
-        
         .good-item { border-left: 4px solid var(--success); background: #fafffb; }
         .bad-item { border-left: 4px solid var(--danger); background: #fff9f9; }
 
-        /* Modal Styles */
         #orderModal {
             display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%;
             background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center;
         }
         .modal-content { background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; }
-        
         .delete-btn { background: transparent; color: #cedada; padding: 5px; margin-left: 10px; }
         .delete-btn:hover { color: var(--danger); }
+        .meta { font-size: 0.8rem; color: var(--text-light); display: block; }
 
         @media (max-width: 500px) { .topic-grid { grid-template-columns: 1fr; } }
     </style>
@@ -61,13 +59,13 @@
             <div class="row">
                 <input type="date" id="dateInput">
                 <input type="text" id="dateUser" placeholder="Dein Name">
-                <button onclick="addDate()">Dazu</button>
+                <button onclick="addDate()">Vorschlagen</button>
             </div>
             <div id="dateList"></div>
         </div>
 
         <div class="card">
-            <h2>🛒 Wer bringt was / Bestellung</h2>
+            <h2>🛒 Mitbring-Liste & Bestellung</h2>
             <div class="row">
                 <input type="text" id="itemName" placeholder="Was bringst du mit?">
                 <input type="number" id="itemQty" placeholder="Menge" value="0" style="width: 80px;">
@@ -80,90 +78,103 @@
         <div class="card">
             <h2>💬 Themen-Check</h2>
             <div class="row">
-                <input type="text" id="topicInput" placeholder="Worüber sprechen wir?">
-                <select id="topicType">
-                    <option value="good">👍 Besprechen</option>
-                    <option value="bad">🚫 Tabu heute</option>
-                </select>
+                <input type="text" id="topicInput" placeholder="Thema...">
+                <select id="topicType"><option value="good">👍 Redebedarf</option><option value="bad">🚫 Tabu</option></select>
                 <button onclick="addTopic()">Posten</button>
             </div>
-
             <div class="topic-grid">
-                <div class="topic-column">
-                    <h3 class="good-title">✅ Redebedarf</h3>
-                    <div id="goodTopics"></div>
-                </div>
-                <div class="topic-column">
-                    <h3 class="bad-title">❌ Lieber nicht</h3>
-                    <div id="badTopics"></div>
-                </div>
+                <div class="topic-column"><div id="goodTopics"></div></div>
+                <div class="topic-column"><div id="badTopics"></div></div>
             </div>
         </div>
     </div>
 
-    <div id="orderModal">
-        <div class="modal-content">
-            <h3>Neue Bestellung</h3>
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                <input type="text" id="modalName" placeholder="Dein Name / Familie">
-                <input type="number" id="modalQty" placeholder="Anzahl Stück" value="1">
-            </div>
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button id="confirmOrderBtn">Bestellung abschicken</button>
-                <button style="background: #cedada; color: #1a1e1e;" onclick="closeModal()">Abbrechen</button>
-            </div>
+    <div id="orderModal"><div class="modal-content">
+        <h3>Neue Bestellung</h3>
+        <input type="text" id="modalName" placeholder="Name" style="width:90%; margin-bottom:10px;">
+        <input type="number" id="modalQty" value="1" style="width:90%; margin-bottom:20px;">
+        <div style="display:flex; gap:10px;">
+            <button id="confirmOrderBtn" style="flex:1;">Bestellen</button>
+            <button onclick="closeModal()" style="background:#cedada; color:#1a1e1e;">Abbruch</button>
         </div>
-    </div>
+    </div></div>
 
     <script>
         const SUPABASE_URL = "https://zcqtnwcdcdbmgqfdpjbs.supabase.co";
         const SUPABASE_KEY = "sb_publishable_VoFrsNhdsOjn6XtFTNcWjw_l07gzT-Y";
         const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let currentActiveItem = {};
+        let activeItem = {};
+
+        // 1. STIMMEN-CHECK FUNKTION
+        function hasVoted(id) {
+            return JSON.parse(localStorage.getItem('breakfast_votes') || '[]').includes(id);
+        }
 
         async function loadAll() {
-            // Termine
+            // TERMINE
             const { data: dates } = await db.from('dates').select('*').order('votes', { ascending: false });
-            render('dateList', dates, d => `<div class="list-item"><div><strong>${new Date(d.value).toLocaleDateString('de-DE')}</strong><span class="meta">Von ${d.created_by}</span></div><div><span>⭐ ${d.votes}</span> <button style="background:#e8f4f2; color:var(--primary); padding:8px;" onclick="voteDate(${d.id}, ${d.votes})">Vote</button></div></div>`);
-
-            // Items
-            const { data: items } = await db.from('items').select('*').order('id', { ascending: false });
-            render('itemList', items, i => `<div class="list-item"><div><strong>${i.qty}x ${i.name}</strong><span class="meta">Von: ${i.user_name}</span>${i.wanted_by ? `<span class="meta" style="color:var(--primary); font-weight:600;">Bestellt: ${i.wanted_by}</span>` : ''}</div><div style="display:flex; align-items:center;"><button style="background:#e8f4f2; color:var(--primary); font-size:0.8rem; padding:8px;" onclick="openModal(${i.id}, ${i.qty}, '${i.wanted_by || ''}')">Bestellen</button><button class="delete-btn" onclick="deleteEntry('items', ${i.id})">✕</button></div></div>`);
-
-            // Themen (Getrennt laden)
-            const { data: topics } = await db.from('topics').select('*').order('id', { ascending: false });
-            const good = topics?.filter(t => t.type === 'good') || [];
-            const bad = topics?.filter(t => t.type === 'bad') || [];
+            const maxVotes = dates?.length > 0 ? Math.max(...dates.map(d => d.votes)) : 0;
             
-            render('goodTopics', good, t => `<div class="list-item good-item"><span>${t.text}</span><button class="delete-btn" onclick="deleteEntry('topics', ${t.id})">✕</button></div>`);
-            render('badTopics', bad, t => `<div class="list-item bad-item"><span>${t.text}</span><button class="delete-btn" onclick="deleteEntry('topics', ${t.id})">✕</button></div>`);
+            render('dateList', dates, d => {
+                const isWinner = d.votes > 0 && d.votes === maxVotes;
+                const alreadyVoted = hasVoted(d.id);
+                return `
+                <div class="list-item ${isWinner ? 'winner' : ''}">
+                    <div>
+                        <strong>${isWinner ? '<span class="crown">👑</span>' : ''}${new Date(d.value).toLocaleDateString('de-DE')}</strong>
+                        <span class="meta">Von ${d.created_by}</span>
+                    </div>
+                    <div style="display:flex; align-items:center;">
+                        <span style="font-weight:bold; margin-right:10px;">${d.votes} ⭐</span>
+                        <button style="padding:8px;" onclick="voteDate(${d.id}, ${d.votes})" ${alreadyVoted ? 'disabled' : ''}>
+                            ${alreadyVoted ? 'Voted' : 'Vote'}
+                        </button>
+                        <button class="delete-btn" onclick="deleteEntry('dates', ${d.id})">✕</button>
+                    </div>
+                </div>`;
+            });
+
+            // ITEMS & DEFAULT CHECK
+            const { data: items } = await db.from('items').select('*').order('id', { ascending: true });
+            
+            // Falls Liste leer, Default Items einfügen
+            if (items && items.length === 0) {
+                const defaults = ['Körnerbrötchen', 'normale Brötchen', 'Croissant', 'Laugenstange', 'Laugenbrötchen'];
+                for (const name of defaults) {
+                    await db.from('items').insert([{ name, qty: 0, user_name: 'System' }]);
+                }
+                loadAll(); return;
+            }
+
+            render('itemList', items, i => `
+                <div class="list-item">
+                    <div><strong>${i.qty}x ${i.name}</strong><span class="meta">Besorgt von: ${i.user_name}</span>
+                    ${i.wanted_by ? `<span class="meta" style="color:var(--primary); font-weight:600;">Bestellt: ${i.wanted_by}</span>` : ''}</div>
+                    <div style="display:flex; align-items:center;">
+                        <button class="order-btn" style="background:#e8f4f2; color:var(--primary); padding:8px; font-size:0.8rem;" onclick="openModal(${i.id}, ${i.qty}, '${i.wanted_by || ''}')">Bestellen</button>
+                        <button class="delete-btn" onclick="deleteEntry('items', ${i.id})">✕</button>
+                    </div>
+                </div>`);
+
+            // THEMEN
+            const { data: topics } = await db.from('topics').select('*').order('id', { ascending: false });
+            render('goodTopics', topics?.filter(t => t.type === 'good'), t => `<div class="list-item good-item"><span>${t.text}</span><button class="delete-btn" onclick="deleteEntry('topics', ${t.id})">✕</button></div>`);
+            render('badTopics', topics?.filter(t => t.type === 'bad'), t => `<div class="list-item bad-item"><span>${t.text}</span><button class="delete-btn" onclick="deleteEntry('topics', ${t.id})">✕</button></div>`);
         }
 
         function render(id, data, template) {
             document.getElementById(id).innerHTML = data?.length ? data.map(template).join('') : '<p style="color:#ccc; text-align:center; font-size:0.8rem;">Leer</p>';
         }
 
-        async function addTopic() {
-            const text = document.getElementById('topicInput').value;
-            const type = document.getElementById('topicType').value;
-            if (text) { await db.from('topics').insert([{ text, type }]); document.getElementById('topicInput').value = ""; loadAll(); }
+        async function voteDate(id, currentVotes) {
+            if (hasVoted(id)) return;
+            await db.from('dates').update({ votes: currentVotes + 1 }).eq('id', id);
+            const votes = JSON.parse(localStorage.getItem('breakfast_votes') || '[]');
+            votes.push(id);
+            localStorage.setItem('breakfast_votes', JSON.stringify(votes));
+            loadAll();
         }
-
-        // Modal Logik
-        function openModal(id, qty, wishes) { currentActiveItem = {id, qty, wishes}; document.getElementById('orderModal').style.display = 'flex'; }
-        function closeModal() { document.getElementById('orderModal').style.display = 'none'; }
-        
-        document.getElementById('confirmOrderBtn').onclick = async function() {
-            const name = document.getElementById('modalName').value;
-            const num = parseInt(document.getElementById('modalQty').value);
-            if (name && num > 0) {
-                const entry = `${name} (${num}x)`;
-                const wishes = currentActiveItem.wishes ? currentActiveItem.wishes + ", " + entry : entry;
-                await db.from('items').update({ qty: currentActiveItem.qty + num, wanted_by: wishes }).eq('id', currentActiveItem.id);
-                closeModal(); loadAll();
-            }
-        };
 
         async function addDate() {
             const v = document.getElementById('dateInput').value;
@@ -171,13 +182,30 @@
             if (v && u) { await db.from('dates').insert([{ value: v, created_by: u, votes: 0 }]); loadAll(); }
         }
 
-        async function voteDate(id, v) { await db.from('dates').update({ votes: v + 1 }).eq('id', id); loadAll(); }
-
         async function addItem() {
             const n = document.getElementById('itemName').value;
             const q = parseInt(document.getElementById('itemQty').value) || 0;
             const u = document.getElementById('userName').value;
             if (n && u) { await db.from('items').insert([{ name: n, qty: q, user_name: u }]); loadAll(); }
+        }
+
+        function openModal(id, qty, wishes) { activeItem = {id, qty, wishes}; document.getElementById('orderModal').style.display = 'flex'; }
+        function closeModal() { document.getElementById('orderModal').style.display = 'none'; }
+        
+        document.getElementById('confirmOrderBtn').onclick = async function() {
+            const name = document.getElementById('modalName').value;
+            const num = parseInt(document.getElementById('modalQty').value);
+            if (name && num > 0) {
+                const wishes = activeItem.wishes ? activeItem.wishes + ", " + name + " (" + num + "x)" : name + " (" + num + "x)";
+                await db.from('items').update({ qty: activeItem.qty + num, wanted_by: wishes }).eq('id', activeItem.id);
+                closeModal(); loadAll();
+            }
+        };
+
+        async function addTopic() {
+            const text = document.getElementById('topicInput').value;
+            const type = document.getElementById('topicType').value;
+            if (text) { await db.from('topics').insert([{ text, type }]); document.getElementById('topicInput').value = ""; loadAll(); }
         }
 
         async function deleteEntry(table, id) { if (confirm('Löschen?')) { await db.from(table).delete().eq('id', id); loadAll(); } }
