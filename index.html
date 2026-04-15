@@ -30,8 +30,19 @@
         .delete-btn { background: transparent; color: #cedada; padding: 5px; margin-left: 10px; }
         .delete-btn:hover { color: #ff4757; }
         .meta { font-size: 0.8rem; color: var(--text-light); display: block; }
-        .voted { border-left: 4px solid var(--success); }
-        .bad { background: #fff9f9; } .good { background: #fafffb; }
+
+        /* NEU: Styles für das eigene Pop-up (Modal) */
+        #orderModal {
+            display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 400px;
+            box-shadow: 0 15px-40px rgba(0,0,0,0.2);
+        }
+        .modal-content h3 { margin-top: 0; margin-bottom: 20px; color: var(--primary); }
+        .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+        .cancel-btn { background: #cedada; color: #1a1e1e; }
     </style>
 </head>
 <body>
@@ -51,7 +62,7 @@
         <div class="card">
             <h2>🛒 Wer bringt was / Bestellung</h2>
             <div class="row">
-                <input type="text" id="itemName" placeholder="Was bringst du mit? (z.B. Brötchen)">
+                <input type="text" id="itemName" placeholder="Was bringst du mit?">
                 <input type="number" id="itemQty" placeholder="Menge" value="0" style="width: 80px;">
                 <input type="text" id="userName" placeholder="Dein Name">
                 <button onclick="addItem()">Anbieten</button>
@@ -70,87 +81,30 @@
         </div>
     </div>
 
+    <div id="orderModal">
+        <div class="modal-content">
+            <h3>Neue Bestellung</h3>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <input type="text" id="modalName" placeholder="Dein Name / Familie">
+                <input type="number" id="modalQty" placeholder="Anzahl Stück" value="1">
+            </div>
+            <div class="modal-actions">
+                <button id="confirmOrderBtn">Bestellung abschicken</button>
+                <button class="cancel-btn" onclick="closeModal()">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const SUPABASE_URL = "https://zcqtnwcdcdbmgqfdpjbs.supabase.co";
         const SUPABASE_KEY = "sb_publishable_VoFrsNhdsOjn6XtFTNcWjw_l07gzT-Y";
         const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+        let currentActiveItemId = null;
+        let currentActiveItemQty = 0;
+        let currentActiveItemWishes = "";
+
         async function loadAll() {
             const { data: dates } = await db.from('dates').select('*').order('votes', { ascending: false });
             render('dateList', dates, d => `
-                <div class="list-item ${JSON.parse(localStorage.getItem('myVotes') || '[]').includes(d.id) ? 'voted' : ''}">
-                    <div><strong>${new Date(d.value).toLocaleDateString('de-DE')}</strong><span class="meta">Von ${d.created_by}</span></div>
-                    <div><span>⭐ ${d.votes}</span> <button class="order-btn" onclick="voteDate(${d.id}, ${d.votes})">Vote</button></div>
-                </div>`);
-
-            const { data: items } = await db.from('items').select('*').order('id', { ascending: false });
-            render('itemList', items, i => `
                 <div class="list-item">
-                    <div>
-                        <strong style="font-size:1.1rem;">${i.qty}x ${i.name}</strong>
-                        <span class="meta">Wird besorgt von: ${i.user_name}</span>
-                        ${i.wanted_by ? `<span class="meta" style="color:var(--primary); font-weight:600;">Bestellungen: ${i.wanted_by}</span>` : ''}
-                    </div>
-                    <div style="display:flex; align-items:center;">
-                        <button class="order-btn" onclick="orderCustom(${i.id}, ${i.qty}, '${i.wanted_by || ''}')">Bestellen</button>
-                        <button class="delete-btn" onclick="deleteEntry('items', ${i.id})">✕</button>
-                    </div>
-                </div>`);
-
-            const { data: topics } = await db.from('topics').select('*').order('id', { ascending: false });
-            render('topicList', topics, t => `<div class="list-item ${t.type}"><span>${t.text}</span><button class="delete-btn" onclick="deleteEntry('topics', ${t.id})">✕</button></div>`);
-        }
-
-        function render(id, data, template) {
-            document.getElementById(id).innerHTML = data?.length ? data.map(template).join('') : '<p style="color:#ccc; text-align:center;">Noch leer...</p>';
-        }
-
-        async function addItem() {
-            const name = document.getElementById('itemName').value;
-            const qty = parseInt(document.getElementById('itemQty').value) || 0;
-            const user = document.getElementById('userName').value;
-            if (name && user) { await db.from('items').insert([{ name, qty, user_name: user }]); loadAll(); }
-        }
-
-        async function orderCustom(id, currentQty, currentWishes) {
-            const name = prompt("Dein Name / Familienname:");
-            if (!name) return;
-            const amount = prompt("Wie viele Stück möchtest du?", "1");
-            const numAmount = parseInt(amount);
-
-            if (name && !isNaN(numAmount) && numAmount > 0) {
-                const newWishEntry = `${name} (${numAmount}x)`;
-                const newWishes = currentWishes ? currentWishes + ", " + newWishEntry : newWishEntry;
-                await db.from('items').update({ 
-                    qty: currentQty + numAmount, 
-                    wanted_by: newWishes 
-                }).eq('id', id);
-                loadAll();
-            }
-        }
-
-        async function addDate() {
-            const val = document.getElementById('dateInput').value;
-            const user = document.getElementById('dateUser').value;
-            if (val && user) { await db.from('dates').insert([{ value: val, created_by: user, votes: 0 }]); loadAll(); }
-        }
-
-        async function voteDate(id, v) {
-            await db.from('dates').update({ votes: v + 1 }).eq('id', id);
-            loadAll();
-        }
-
-        async function addTopic() {
-            const text = document.getElementById('topicInput').value;
-            const type = document.getElementById('topicType').value;
-            if (text) { await db.from('topics').insert([{ text, type }]); loadAll(); }
-        }
-
-        async function deleteEntry(table, id) {
-            if (confirm('Löschen?')) { await db.from(table).delete().eq('id', id); loadAll(); }
-        }
-
-        loadAll();
-    </script>
-</body>
-</html>
